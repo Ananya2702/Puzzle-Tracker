@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PuzzlePace</title>
+    <title>Puzzle Geeks</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
@@ -21,7 +21,7 @@
                         <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
                     </svg>
                 </div>
-                <span class="brand-name">PuzzlePace</span>
+                <span class="brand-name">Puzzle Geeks</span>
             </div>
 
             <nav class="nav">
@@ -81,7 +81,7 @@
         <button class="topbar-menu" id="menu-toggle">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
-        <span class="topbar-title">PuzzlePace</span>
+        <span class="topbar-title">Puzzle Geeks</span>
     </header>
 
     <!-- Main -->
@@ -163,8 +163,51 @@
 
         <!-- ADD PUZZLE -->
         <section class="page" id="page-add">
-            <div class="page-head"><div><h1>Log Puzzle</h1><p class="page-desc">Record a completed session</p></div></div>
-            <div class="card glass form-card">
+            <div class="page-head"><div><h1>Log Puzzle</h1><p class="page-desc">Record a completed session</p></div>
+                <div class="head-actions">
+                    <button class="btn btn-ghost btn-sm" id="toggle-quick-mode">Quick Add</button>
+                </div>
+            </div>
+
+            <!-- Quick Add Form (minimal fields) -->
+            <div class="card glass form-card" id="quick-add-card" style="display:none">
+                <h3 style="margin-bottom:14px; font-size:0.9rem; color:var(--text-2)">Quick Add - just the essentials</h3>
+                <form id="quickForm">
+                    <div class="form-row">
+                        <div class="field"><label>Pieces</label>
+                            <div class="piece-btns" id="quick-piece-btns">
+                                <button type="button" class="piece-btn" data-val="100">100</button>
+                                <button type="button" class="piece-btn" data-val="200">200</button>
+                                <button type="button" class="piece-btn" data-val="300">300</button>
+                                <button type="button" class="piece-btn active" data-val="500">500</button>
+                                <button type="button" class="piece-btn" data-val="750">750</button>
+                                <button type="button" class="piece-btn" data-val="1000">1000</button>
+                                <button type="button" class="piece-btn" data-val="1500">1500</button>
+                                <button type="button" class="piece-btn" data-val="2000">2000</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label>Time</label>
+                        <div class="time-group">
+                            <div class="time-unit"><input type="number" id="quick-hours" placeholder="0" min="0"><small>h</small></div>
+                            <span class="time-colon">:</span>
+                            <div class="time-unit"><input type="number" id="quick-minutes" placeholder="00" min="0" max="59"><small>m</small></div>
+                            <span class="time-colon">:</span>
+                            <div class="time-unit"><input type="number" id="quick-seconds" placeholder="00" min="0" max="59"><small>s</small></div>
+                        </div>
+                    </div>
+                    <div class="preview-bar" id="quick-preview">
+                        <span class="preview-lbl">500pc equivalent</span>
+                        <span class="preview-val" id="quick-preview-time">--:--</span>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Save Puzzle</button>
+                </form>
+                <div class="toast" id="quick-toast"></div>
+            </div>
+
+            <!-- Full Form -->
+            <div class="card glass form-card" id="full-add-card">
                 <form id="puzzleForm">
                     <div class="form-row">
                         <div class="field"><label>Date</label><input type="date" id="date" required></div>
@@ -184,9 +227,9 @@
                         <div class="time-group">
                             <div class="time-unit"><input type="number" id="time-hours" placeholder="0" min="0"><small>h</small></div>
                             <span class="time-colon">:</span>
-                            <div class="time-unit"><input type="number" id="time-minutes" placeholder="00" min="0" max="59" required><small>m</small></div>
+                            <div class="time-unit"><input type="number" id="time-minutes" placeholder="00" min="0" max="59"><small>m</small></div>
                             <span class="time-colon">:</span>
-                            <div class="time-unit"><input type="number" id="time-seconds" placeholder="00" min="0" max="59" required><small>s</small></div>
+                            <div class="time-unit"><input type="number" id="time-seconds" placeholder="00" min="0" max="59"><small>s</small></div>
                         </div>
                     </div>
                     <div class="form-row">
@@ -223,11 +266,47 @@
             <div class="page-head">
                 <div><h1>History</h1><p class="page-desc">All sessions</p></div>
                 <div class="head-actions">
+                    <button class="btn btn-ghost btn-sm" id="toggle-import">Import CSV</button>
                     <select id="filter-pieces" class="sel-sm"><option value="">All</option><option value="100">100pc</option><option value="200">200pc</option><option value="300">300pc</option><option value="500">500pc</option><option value="750">750pc</option><option value="1000">1000pc</option><option value="1500">1500pc</option><option value="2000">2000pc</option></select>
                     <select id="sort-by" class="sel-sm"><option value="date">Date</option><option value="time">Time</option><option value="scaled">Scaled</option><option value="pieces">Pieces</option></select>
                     <a href="/api/export/csv" class="btn btn-ghost btn-sm">Export CSV</a>
                 </div>
             </div>
+
+            <!-- CSV Import Panel -->
+            <div class="card glass import-panel" id="import-panel" style="display:none">
+                <div class="import-header">
+                    <h3>Bulk Import from CSV</h3>
+                    <button class="modal-x" id="close-import">&times;</button>
+                </div>
+                <p class="help">Upload a CSV file with your puzzle times. Expected columns:</p>
+                <div class="csv-format">
+                    <code>Date, Pieces, Time, Name (optional), Brand (optional), Difficulty (optional), Notes (optional), Tags (optional)</code>
+                    <p class="help" style="margin-top:8px; margin-bottom:0">Time format: <strong>h:mm:ss</strong>, <strong>mm:ss</strong>, or <strong>seconds</strong>. Date format: <strong>YYYY-MM-DD</strong></p>
+                </div>
+                <div class="import-zone" id="import-zone">
+                    <input type="file" id="csv-file" accept=".csv" style="display:none">
+                    <div class="drop-area" id="drop-area">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
+                        <p>Drop CSV file here or <a href="#" id="browse-file">browse</a></p>
+                    </div>
+                </div>
+                <div id="import-preview" style="display:none">
+                    <div class="import-summary" id="import-summary"></div>
+                    <div class="import-table-scroll">
+                        <table class="import-table">
+                            <thead id="import-thead"></thead>
+                            <tbody id="import-tbody"></tbody>
+                        </table>
+                    </div>
+                    <div class="import-actions">
+                        <button class="btn btn-ghost" id="import-cancel">Cancel</button>
+                        <button class="btn btn-primary" id="import-confirm">Import All</button>
+                    </div>
+                </div>
+                <div class="toast" id="import-toast"></div>
+            </div>
+
             <div class="card glass no-pad">
                 <div class="table-scroll">
                     <table>

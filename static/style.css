@@ -1,5 +1,5 @@
 /* ========================================
-   PuzzlePace - Premium Design System
+   Puzzle Geeks - Premium Design System
    ======================================== */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -691,4 +691,128 @@ tr.is-pb td:first-child { box-shadow: inset 3px 0 0 var(--green); }
     .timer-ring { width: 220px; height: 220px; }
     .timer-display { font-size: 2.2rem; }
     .row-form { flex-direction: column; }
+    .piece-btns { gap: 6px; }
+    .piece-btn { min-width: 48px; padding: 8px 10px; font-size: 0.78rem; }
+}
+
+/* ========== QUICK ADD PIECE BUTTONS ========== */
+.piece-btns {
+    display: flex; flex-wrap: wrap; gap: 8px;
+}
+
+.piece-btn {
+    padding: 10px 16px;
+    min-width: 56px;
+    border-radius: var(--radius-xs);
+    border: 1.5px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-2);
+    font-size: 0.85rem;
+    font-weight: 600;
+    font-family: var(--font);
+    cursor: pointer;
+    transition: all 0.2s var(--ease);
+    text-align: center;
+}
+
+.piece-btn:hover {
+    border-color: var(--purple);
+    color: var(--purple);
+    background: var(--purple-soft);
+}
+
+.piece-btn.active {
+    background: var(--purple);
+    color: #fff;
+    border-color: var(--purple);
+    box-shadow: 0 2px 8px var(--purple-glow);
+}
+
+/* ========== CSV IMPORT ========== */
+.import-panel {
+    margin-bottom: 16px;
+    animation: fadeUp 0.3s var(--ease);
+}
+
+.import-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px;
+}
+
+.import-header h3 { font-size: 0.95rem; }
+
+.csv-format {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xs);
+    padding: 12px 16px;
+    margin-bottom: 16px;
+}
+
+.csv-format code {
+    font-size: 0.78rem;
+    color: var(--purple);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    word-break: break-all;
+}
+
+.drop-area {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 36px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text-3);
+}
+
+.drop-area:hover, .drop-area.dragover {
+    border-color: var(--purple);
+    background: var(--purple-soft);
+    color: var(--purple);
+}
+
+.drop-area svg { margin: 0 auto 10px; display: block; opacity: 0.5; }
+.drop-area p { font-size: 0.88rem; }
+.drop-area a { color: var(--purple); font-weight: 600; text-decoration: none; }
+.drop-area a:hover { text-decoration: underline; }
+
+.import-summary {
+    padding: 12px 16px;
+    background: var(--green-soft);
+    border: 1px solid rgba(52,211,153,0.2);
+    border-radius: var(--radius-xs);
+    margin-bottom: 12px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--green);
+}
+
+.import-table-scroll {
+    max-height: 280px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xs);
+    margin-bottom: 14px;
+}
+
+.import-table { width: 100%; font-size: 0.82rem; }
+.import-table th { position: sticky; top: 0; z-index: 1; }
+.import-table td { padding: 8px 12px; }
+.import-table tr.error td { background: var(--red-soft); color: var(--red); }
+
+.import-actions {
+    display: flex; gap: 10px; justify-content: flex-end;
+}
+
+/* ========== SUCCESS ANIMATION ========== */
+@keyframes successPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+.save-success {
+    animation: successPulse 0.4s var(--ease);
+    border-color: rgba(52,211,153,0.3) !important;
 }

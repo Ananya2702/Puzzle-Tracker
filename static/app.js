@@ -1,5 +1,5 @@
 // ============================================================
-// PuzzlePace - App Logic
+// Puzzle Geeks - App Logic
 // ============================================================
 
 // --- Utilities ---
@@ -52,19 +52,26 @@ document.getElementById('main').addEventListener('click', () => document.getElem
 // --- Theme ---
 function setTheme(t) {
     document.documentElement.dataset.theme = t;
-    localStorage.setItem('pp-theme', t);
+    localStorage.setItem('pg-theme', t);
     setChartTheme();
 }
 document.getElementById('theme-toggle').addEventListener('click', () => {
     setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
 });
-setTheme(localStorage.getItem('pp-theme') || 'dark');
+setTheme(localStorage.getItem('pg-theme') || 'dark');
 
 // --- Logout ---
 document.getElementById('logout-btn').addEventListener('click', async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     window.location.href = '/login';
 });
+
+// --- Toast helper ---
+function toast(id, msg, type) {
+    const el = document.getElementById(id);
+    el.textContent = msg; el.className = `toast ${type}`;
+    setTimeout(() => el.className = 'toast', 4000);
+}
 
 // ============================================================
 // DASHBOARD
@@ -174,11 +181,76 @@ document.getElementById('timer-save-btn').addEventListener('click', async () => 
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pieces: parseInt(document.getElementById('timer-pieces').value), time_seconds: timerSec, puzzle_name: document.getElementById('timer-name').value, date: new Date().toISOString().split('T')[0] })
     });
-    if (res.ok) { document.getElementById('timer-reset').click(); alert('Saved!'); }
+    if (res.ok) {
+        const p = await res.json();
+        document.getElementById('timer-reset').click();
+        toast('form-toast', `Saved! ${fmt(p.time_seconds)} (500pc eq: ${fmt(Math.round(p.scaled_time_seconds))})`, 'success');
+        goTo('dashboard');
+    }
 });
 
 // ============================================================
-// ADD PUZZLE
+// ADD PUZZLE - QUICK MODE
+// ============================================================
+let quickMode = false;
+let quickPieces = 500;
+
+document.getElementById('toggle-quick-mode').addEventListener('click', () => {
+    quickMode = !quickMode;
+    document.getElementById('quick-add-card').style.display = quickMode ? 'block' : 'none';
+    document.getElementById('full-add-card').style.display = quickMode ? 'none' : 'block';
+    document.getElementById('toggle-quick-mode').textContent = quickMode ? 'Full Form' : 'Quick Add';
+});
+
+// Piece buttons for quick add
+document.querySelectorAll('#quick-piece-btns .piece-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('#quick-piece-btns .piece-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        quickPieces = parseInt(btn.dataset.val);
+        updQuickPreview();
+    });
+});
+
+function updQuickPreview() {
+    const h = parseInt(document.getElementById('quick-hours').value) || 0;
+    const m = parseInt(document.getElementById('quick-minutes').value) || 0;
+    const s = parseInt(document.getElementById('quick-seconds').value) || 0;
+    const total = h * 3600 + m * 60 + s;
+    const bar = document.getElementById('quick-preview');
+    if (quickPieces > 0 && total > 0) {
+        document.getElementById('quick-preview-time').textContent = fmt(Math.round(scaled(total, quickPieces)));
+        bar.classList.add('visible');
+    } else bar.classList.remove('visible');
+}
+['quick-hours','quick-minutes','quick-seconds'].forEach(id =>
+    document.getElementById(id).addEventListener('input', updQuickPreview)
+);
+
+document.getElementById('quickForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const h = parseInt(document.getElementById('quick-hours').value) || 0;
+    const m = parseInt(document.getElementById('quick-minutes').value) || 0;
+    const s = parseInt(document.getElementById('quick-seconds').value) || 0;
+    const total = h * 3600 + m * 60 + s;
+    if (total <= 0) return toast('quick-toast', 'Enter a time', 'error');
+
+    const res = await fetch('/api/puzzles', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pieces: quickPieces, time_seconds: total, date: new Date().toISOString().split('T')[0] })
+    });
+    if (res.ok) {
+        const p = await res.json();
+        toast('quick-toast', `Saved! ${quickPieces}pc in ${fmt(total)} (500pc eq: ${fmt(Math.round(p.scaled_time_seconds))})`, 'success');
+        ['quick-hours','quick-minutes','quick-seconds'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('quick-preview').classList.remove('visible');
+        // Flash success animation
+        document.getElementById('quick-add-card').classList.add('save-success');
+        setTimeout(() => document.getElementById('quick-add-card').classList.remove('save-success'), 500);
+    } else toast('quick-toast', 'Error saving', 'error');
+});
+
+// ============================================================
+// ADD PUZZLE - FULL FORM
 // ============================================================
 document.getElementById('date').value = new Date().toISOString().split('T')[0];
 document.getElementById('pieces').addEventListener('change', function() {
@@ -225,18 +297,15 @@ document.getElementById('puzzleForm').addEventListener('submit', async (e) => {
     })});
     if (res.ok) {
         const p = await res.json();
-        toast('form-toast', `Saved! 500pc eq: ${fmt(Math.round(p.scaled_time_seconds))}`, 'success');
+        toast('form-toast', `Saved! ${pcs}pc in ${fmt(total)} (500pc eq: ${fmt(Math.round(p.scaled_time_seconds))})`, 'success');
         ['time-hours','time-minutes','time-seconds','puzzle_name','brand','notes','tags'].forEach(id => document.getElementById(id).value = '');
         document.getElementById('scaled-preview').classList.remove('visible');
         document.getElementById('date').value = new Date().toISOString().split('T')[0];
+        // Flash success
+        document.getElementById('full-add-card').classList.add('save-success');
+        setTimeout(() => document.getElementById('full-add-card').classList.remove('save-success'), 500);
     } else toast('form-toast', 'Error saving', 'error');
 });
-
-function toast(id, msg, type) {
-    const el = document.getElementById(id);
-    el.textContent = msg; el.className = `toast ${type}`;
-    setTimeout(() => el.className = 'toast', 4000);
-}
 
 // ============================================================
 // HISTORY
@@ -249,7 +318,7 @@ async function loadHistory() {
     const res = await fetch(url);
     const puzzles = await res.json();
     const tbody = document.getElementById('history-body');
-    if (!puzzles.length) { tbody.innerHTML = '<tr><td colspan="8" class="placeholder" style="text-align:center;padding:32px">No entries</td></tr>'; return; }
+    if (!puzzles.length) { tbody.innerHTML = '<tr><td colspan="8" class="placeholder" style="text-align:center;padding:32px">No entries yet. Log your first puzzle!</td></tr>'; return; }
     tbody.innerHTML = puzzles.map(p => {
         const pace = (p.time_seconds / p.pieces).toFixed(1);
         const s = '<span style="color:var(--orange)">' + '&#9733;'.repeat(p.difficulty_rating) + '</span><span style="opacity:0.25">' + '&#9733;'.repeat(5 - p.difficulty_rating) + '</span>';
@@ -296,7 +365,224 @@ document.getElementById('editForm').addEventListener('submit', async (e) => {
     closeEditModal(); loadHistory();
 });
 
-async function delPuzzle(id) { if (!confirm('Delete?')) return; await fetch(`/api/puzzles/${id}`, { method: 'DELETE' }); loadHistory(); }
+async function delPuzzle(id) { if (!confirm('Delete this entry?')) return; await fetch(`/api/puzzles/${id}`, { method: 'DELETE' }); loadHistory(); }
+
+// ============================================================
+// CSV IMPORT
+// ============================================================
+let importData = [];
+
+document.getElementById('toggle-import').addEventListener('click', () => {
+    const panel = document.getElementById('import-panel');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+});
+
+document.getElementById('close-import').addEventListener('click', () => {
+    document.getElementById('import-panel').style.display = 'none';
+    resetImport();
+});
+
+document.getElementById('browse-file').addEventListener('click', (e) => {
+    e.preventDefault();
+    document.getElementById('csv-file').click();
+});
+
+document.getElementById('drop-area').addEventListener('click', () => {
+    document.getElementById('csv-file').click();
+});
+
+// Drag & drop
+const dropArea = document.getElementById('drop-area');
+['dragenter', 'dragover'].forEach(evt => dropArea.addEventListener(evt, (e) => {
+    e.preventDefault(); dropArea.classList.add('dragover');
+}));
+['dragleave', 'drop'].forEach(evt => dropArea.addEventListener(evt, (e) => {
+    e.preventDefault(); dropArea.classList.remove('dragover');
+}));
+dropArea.addEventListener('drop', (e) => {
+    const files = e.dataTransfer.files;
+    if (files.length > 0 && files[0].name.endsWith('.csv')) handleCSVFile(files[0]);
+});
+
+document.getElementById('csv-file').addEventListener('change', (e) => {
+    if (e.target.files.length > 0) handleCSVFile(e.target.files[0]);
+});
+
+function parseTimeString(timeStr) {
+    timeStr = timeStr.trim();
+    // Try pure seconds
+    if (/^\d+$/.test(timeStr)) return parseInt(timeStr);
+    // Try h:mm:ss or hh:mm:ss
+    const parts = timeStr.split(':');
+    if (parts.length === 3) {
+        return parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseInt(parts[2]);
+    }
+    // Try mm:ss
+    if (parts.length === 2) {
+        return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+    }
+    // Try "Xh Ym Zs" format
+    const match = timeStr.match(/(?:(\d+)h)?\s*(?:(\d+)m)?\s*(?:(\d+)s)?/);
+    if (match && (match[1] || match[2] || match[3])) {
+        return (parseInt(match[1]||0) * 3600) + (parseInt(match[2]||0) * 60) + parseInt(match[3]||0);
+    }
+    return NaN;
+}
+
+function handleCSVFile(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const text = e.target.result;
+        const lines = text.split(/\r?\n/).filter(l => l.trim());
+        if (lines.length < 2) return toast('import-toast', 'CSV file is empty or has no data rows', 'error');
+
+        // Parse header
+        const header = lines[0].split(',').map(h => h.trim().toLowerCase());
+        
+        // Try to find columns by name
+        const dateIdx = header.findIndex(h => h.includes('date'));
+        const piecesIdx = header.findIndex(h => h.includes('piece') || h === 'pcs');
+        const timeIdx = header.findIndex(h => h.includes('time') && !h.includes('scaled'));
+        const nameIdx = header.findIndex(h => h.includes('name') || h.includes('puzzle'));
+        const brandIdx = header.findIndex(h => h.includes('brand'));
+        const diffIdx = header.findIndex(h => h.includes('diff') || h.includes('rating'));
+        const notesIdx = header.findIndex(h => h.includes('note'));
+        const tagsIdx = header.findIndex(h => h.includes('tag'));
+
+        // Fallback: positional if headers don't match
+        const getCol = (row, idx, fallback) => idx >= 0 && idx < row.length ? row[idx].trim() : (fallback !== undefined ? fallback : '');
+
+        importData = [];
+        let errors = 0;
+
+        for (let i = 1; i < lines.length; i++) {
+            // Handle CSV with commas inside quotes
+            const row = parseCSVRow(lines[i]);
+            if (row.length < 2) continue;
+
+            const date = getCol(row, dateIdx >= 0 ? dateIdx : 0);
+            const piecesRaw = getCol(row, piecesIdx >= 0 ? piecesIdx : 1);
+            const timeRaw = getCol(row, timeIdx >= 0 ? timeIdx : 2);
+
+            const pieces = parseInt(piecesRaw);
+            const timeSeconds = parseTimeString(timeRaw);
+
+            // Validate date
+            let parsedDate = date;
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+                // Try to parse other date formats
+                const d = new Date(date);
+                if (!isNaN(d.getTime())) {
+                    parsedDate = d.toISOString().split('T')[0];
+                } else {
+                    parsedDate = null;
+                }
+            }
+
+            const entry = {
+                date: parsedDate || new Date().toISOString().split('T')[0],
+                pieces: pieces,
+                time_seconds: timeSeconds,
+                puzzle_name: getCol(row, nameIdx >= 0 ? nameIdx : 3, ''),
+                brand: getCol(row, brandIdx >= 0 ? brandIdx : 4, ''),
+                difficulty_rating: parseInt(getCol(row, diffIdx >= 0 ? diffIdx : 5, '3')) || 3,
+                notes: getCol(row, notesIdx >= 0 ? notesIdx : 6, ''),
+                tags: getCol(row, tagsIdx >= 0 ? tagsIdx : 7, ''),
+                valid: !isNaN(pieces) && pieces > 0 && !isNaN(timeSeconds) && timeSeconds > 0,
+            };
+
+            if (!entry.valid) errors++;
+            importData.push(entry);
+        }
+
+        showImportPreview(errors);
+    };
+    reader.readAsText(file);
+}
+
+function parseCSVRow(line) {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') { inQuotes = !inQuotes; continue; }
+        if (ch === ',' && !inQuotes) { result.push(current); current = ''; continue; }
+        current += ch;
+    }
+    result.push(current);
+    return result;
+}
+
+function showImportPreview(errors) {
+    const validCount = importData.filter(e => e.valid).length;
+    document.getElementById('import-summary').innerHTML =
+        `Found <strong>${importData.length}</strong> rows: <strong>${validCount}</strong> valid` +
+        (errors > 0 ? `, <span style="color:var(--red)">${errors} with errors</span>` : '');
+
+    document.getElementById('import-thead').innerHTML = '<tr><th>#</th><th>Date</th><th>Pieces</th><th>Time</th><th>Name</th><th>Status</th></tr>';
+    document.getElementById('import-tbody').innerHTML = importData.slice(0, 50).map((entry, i) =>
+        `<tr class="${entry.valid ? '' : 'error'}">
+            <td>${i + 1}</td>
+            <td>${entry.date}</td>
+            <td>${entry.valid ? entry.pieces : 'Invalid'}</td>
+            <td>${entry.valid ? fmtShort(entry.time_seconds) : 'Invalid'}</td>
+            <td>${entry.puzzle_name || '-'}</td>
+            <td>${entry.valid ? '<span style="color:var(--green)">OK</span>' : '<span style="color:var(--red)">Error</span>'}</td>
+        </tr>`
+    ).join('') + (importData.length > 50 ? `<tr><td colspan="6" style="text-align:center;color:var(--text-3)">... and ${importData.length - 50} more</td></tr>` : '');
+
+    document.getElementById('import-zone').style.display = 'none';
+    document.getElementById('import-preview').style.display = 'block';
+}
+
+document.getElementById('import-cancel').addEventListener('click', resetImport);
+
+function resetImport() {
+    importData = [];
+    document.getElementById('import-zone').style.display = 'block';
+    document.getElementById('import-preview').style.display = 'none';
+    document.getElementById('csv-file').value = '';
+}
+
+document.getElementById('import-confirm').addEventListener('click', async () => {
+    const valid = importData.filter(e => e.valid);
+    if (!valid.length) return toast('import-toast', 'No valid entries to import', 'error');
+
+    const btn = document.getElementById('import-confirm');
+    btn.disabled = true;
+    btn.textContent = `Importing 0/${valid.length}...`;
+
+    let success = 0, fail = 0;
+    for (let i = 0; i < valid.length; i++) {
+        const entry = valid[i];
+        try {
+            const res = await fetch('/api/puzzles', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    date: entry.date,
+                    pieces: entry.pieces,
+                    time_seconds: entry.time_seconds,
+                    puzzle_name: entry.puzzle_name,
+                    brand: entry.brand,
+                    difficulty_rating: entry.difficulty_rating,
+                    notes: entry.notes,
+                    tags: entry.tags,
+                })
+            });
+            if (res.ok) success++; else fail++;
+        } catch (e) { fail++; }
+        if ((i + 1) % 5 === 0 || i === valid.length - 1) {
+            btn.textContent = `Importing ${i + 1}/${valid.length}...`;
+        }
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Import All';
+    toast('import-toast', `Imported ${success} puzzles${fail > 0 ? ` (${fail} failed)` : ''}!`, success > 0 ? 'success' : 'error');
+    resetImport();
+    loadHistory();
+});
 
 // ============================================================
 // CHARTS
@@ -376,7 +662,7 @@ function renderWeekly(d) {
 async function loadGoals() {
     const res = await fetch('/api/goals'); const goals = await res.json();
     const el = document.getElementById('goals-list');
-    if (!goals.length) { el.innerHTML = '<div class="placeholder">No goals yet</div>'; return; }
+    if (!goals.length) { el.innerHTML = '<div class="placeholder">No goals yet. Create one above to start tracking!</div>'; return; }
     el.innerHTML = goals.map(g => `
         <div class="goal-card ${g.achieved?'done':''}">
             <div class="goal-info"><div class="goal-title">${g.pieces}pc in ${fmt(g.target_time_seconds)}</div><div class="goal-meta">${g.description||''}${g.achieved_date?` &mdash; Done ${fmtDateFull(g.achieved_date)}`:''}</div></div>
