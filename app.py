@@ -26,8 +26,8 @@ DEFAULT_SCALING_EXPONENT = 0.73
 USE_POSTGRES = DATABASE_URL.startswith('postgres')
 
 if USE_POSTGRES:
-    import psycopg2
-    import psycopg2.extras
+    import psycopg
+    from psycopg.rows import dict_row
 else:
     import sqlite3
     DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.environ.get('DATABASE_PATH', 'puzzles.db'))
@@ -48,8 +48,8 @@ class User(UserMixin):
 @login_manager.user_loader
 def load_user(user_id):
     if USE_POSTGRES:
-        conn = psycopg2.connect(DATABASE_URL)
-        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        conn = psycopg.connect(DATABASE_URL, row_factory=dict_row)
+        cur = conn.cursor()
         cur.execute("SELECT * FROM users WHERE id = %s", (user_id,))
         user = cur.fetchone()
         cur.close()
@@ -75,8 +75,7 @@ def unauthorized():
 def get_db():
     if 'db' not in g:
         if USE_POSTGRES:
-            g.db = psycopg2.connect(DATABASE_URL)
-            g.db.autocommit = False
+            g.db = psycopg.connect(DATABASE_URL, row_factory=dict_row, autocommit=False)
         else:
             g.db = sqlite3.connect(DATABASE)
             g.db.row_factory = sqlite3.Row
@@ -90,7 +89,7 @@ def db_execute(db, query, params=None):
     if params is None:
         params = ()
     if USE_POSTGRES:
-        cur = db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur = db.cursor()
         cur.execute(query, params)
         return cur
     else:
@@ -102,7 +101,7 @@ def db_fetchone(db, query, params=None):
     if params is None:
         params = ()
     if USE_POSTGRES:
-        cur = db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur = db.cursor()
         cur.execute(query, params)
         row = cur.fetchone()
         cur.close()
@@ -116,7 +115,7 @@ def db_fetchall(db, query, params=None):
     if params is None:
         params = ()
     if USE_POSTGRES:
-        cur = db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur = db.cursor()
         cur.execute(query, params)
         rows = cur.fetchall()
         cur.close()
@@ -149,8 +148,7 @@ def close_db(exception):
 
 def init_db():
     if USE_POSTGRES:
-        conn = psycopg2.connect(DATABASE_URL)
-        conn.autocommit = True
+        conn = psycopg.connect(DATABASE_URL, autocommit=True)
         cur = conn.cursor()
         cur.execute('''
             CREATE TABLE IF NOT EXISTS users (
@@ -301,8 +299,7 @@ def init_db():
 def setup_user_defaults(user_id):
     """Set up default settings and achievements for a new user."""
     if USE_POSTGRES:
-        conn = psycopg2.connect(DATABASE_URL)
-        conn.autocommit = True
+        conn = psycopg.connect(DATABASE_URL, autocommit=True)
         cur = conn.cursor()
 
         # Default settings
@@ -661,7 +658,7 @@ def api_register():
             "INSERT INTO users (username, email, password_hash) VALUES (%s, %s, %s) RETURNING id",
             (username, email, password_hash)
         )
-        user_id = cur.fetchone()[0]
+        user_id = cur.fetchone()['id']
         cur.close()
         db_commit(db)
     else:
@@ -786,7 +783,7 @@ def add_puzzle():
     scaled_time = calculate_scaled_time(time_seconds, pieces, exponent)
 
     if USE_POSTGRES:
-        cur = db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur = db.cursor()
         cur.execute('''
             INSERT INTO puzzles (user_id, date, pieces, time_seconds, scaled_time_seconds, puzzle_name, brand, difficulty_rating, notes, tags)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
