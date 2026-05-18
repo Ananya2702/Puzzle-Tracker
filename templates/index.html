@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PuzzlePace</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- Ambient background -->
+    <div class="ambient-bg"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-top">
+            <div class="sidebar-brand">
+                <div class="brand-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                </div>
+                <span class="brand-name">PuzzlePace</span>
+            </div>
+
+            <nav class="nav">
+                <a class="nav-link active" data-page="dashboard">
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                    <span>Dashboard</span>
+                </a>
+                <a class="nav-link" data-page="timer">
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <span>Timer</span>
+                </a>
+                <a class="nav-link" data-page="add">
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                    <span>Log Puzzle</span>
+                </a>
+                <a class="nav-link" data-page="history">
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    <span>History</span>
+                </a>
+                <a class="nav-link" data-page="charts">
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    <span>Analytics</span>
+                </a>
+                <a class="nav-link" data-page="goals">
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+                    <span>Goals</span>
+                </a>
+                <a class="nav-link" data-page="achievements">
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
+                    <span>Achievements</span>
+                </a>
+                <a class="nav-link" data-page="settings">
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68 1.65 1.65 0 0 0 9 3.17V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    <span>Settings</span>
+                </a>
+            </nav>
+        </div>
+
+        <div class="sidebar-bottom">
+            <div class="user-card">
+                <div class="user-avatar">{{ username[0]|upper }}</div>
+                <div class="user-info">
+                    <span class="user-name">{{ username }}</span>
+                    <button class="logout-btn" id="logout-btn">Sign out</button>
+                </div>
+            </div>
+            <button class="theme-btn" id="theme-toggle">
+                <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                <span class="theme-label">Theme</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Mobile top bar -->
+    <header class="topbar" id="topbar">
+        <button class="topbar-menu" id="menu-toggle">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <span class="topbar-title">PuzzlePace</span>
+    </header>
+
+    <!-- Main -->
+    <main class="main" id="main">
+        <!-- DASHBOARD -->
+        <section class="page active" id="page-dashboard">
+            <div class="page-head">
+                <div><h1>Dashboard</h1><p class="page-desc">Your speed puzzling overview</p></div>
+            </div>
+
+            <div class="kpi-row">
+                <div class="kpi kpi-purple">
+                    <div class="kpi-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+                    <div><div class="kpi-val" id="stat-total">0</div><div class="kpi-label">Puzzles</div></div>
+                </div>
+                <div class="kpi kpi-green">
+                    <div class="kpi-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+                    <div><div class="kpi-val" id="stat-best">--</div><div class="kpi-label">Best (500pc)</div></div>
+                </div>
+                <div class="kpi kpi-blue">
+                    <div class="kpi-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg></div>
+                    <div><div class="kpi-val" id="stat-avg">--</div><div class="kpi-label">Average (500pc)</div></div>
+                </div>
+                <div class="kpi kpi-orange">
+                    <div class="kpi-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
+                    <div><div class="kpi-val" id="stat-improvement">--</div><div class="kpi-label">Improvement</div></div>
+                </div>
+            </div>
+
+            <div class="mini-stats">
+                <div class="chip"><span class="chip-val" id="stat-hours">0</span><span class="chip-label">hours</span></div>
+                <div class="chip"><span class="chip-val" id="stat-streak">0</span><span class="chip-label">streak</span></div>
+                <div class="chip"><span class="chip-val" id="stat-week">0</span><span class="chip-label">this week</span></div>
+                <div class="chip"><span class="chip-val" id="stat-pace-trend">--</span><span class="chip-label">trend</span></div>
+                <div class="chip"><span class="chip-val" id="stat-total-pieces">0</span><span class="chip-label">pieces</span></div>
+            </div>
+
+            <div class="grid-2">
+                <div class="card glass">
+                    <div class="card-head"><h3>Progress Trend</h3><span class="tag">500pc scaled</span></div>
+                    <div class="chart-box"><canvas id="dashTrendChart"></canvas></div>
+                </div>
+                <div class="card glass">
+                    <div class="card-head"><h3>Recent Sessions</h3><span class="tag">last 10</span></div>
+                    <div class="chart-box"><canvas id="dashRecentChart"></canvas></div>
+                </div>
+            </div>
+
+            <div class="card glass">
+                <div class="card-head"><h3>Personal Bests</h3></div>
+                <div class="pb-row" id="personal-bests"><p class="placeholder">Complete your first puzzle to see records here</p></div>
+            </div>
+        </section>
+
+        <!-- TIMER -->
+        <section class="page" id="page-timer">
+            <div class="page-head"><div><h1>Stopwatch</h1><p class="page-desc">Time your session live</p></div></div>
+            <div class="timer-wrap">
+                <div class="timer-ring">
+                    <div class="timer-display" id="timer-display">00:00:00</div>
+                </div>
+                <div class="timer-btns">
+                    <button class="t-btn t-start" id="timer-start">Start</button>
+                    <button class="t-btn t-pause" id="timer-pause" disabled>Pause</button>
+                    <button class="t-btn t-reset" id="timer-reset">Reset</button>
+                </div>
+                <div class="timer-save card glass" id="timer-save-section" style="display:none">
+                    <h3>Save This Time</h3>
+                    <div class="form-row">
+                        <div class="field"><label>Pieces</label>
+                            <select id="timer-pieces"><option value="100">100</option><option value="200">200</option><option value="300">300</option><option value="500" selected>500</option><option value="750">750</option><option value="1000">1000</option><option value="1500">1500</option><option value="2000">2000</option></select>
+                        </div>
+                        <div class="field"><label>Name</label><input type="text" id="timer-name" placeholder="Optional"></div>
+                    </div>
+                    <button class="btn btn-primary" id="timer-save-btn">Save Puzzle Time</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ADD PUZZLE -->
+        <section class="page" id="page-add">
+            <div class="page-head"><div><h1>Log Puzzle</h1><p class="page-desc">Record a completed session</p></div></div>
+            <div class="card glass form-card">
+                <form id="puzzleForm">
+                    <div class="form-row">
+                        <div class="field"><label>Date</label><input type="date" id="date" required></div>
+                        <div class="field"><label>Pieces</label>
+                            <select id="pieces" required>
+                                <option value="">Select...</option>
+                                <option value="100">100</option><option value="200">200</option><option value="300">300</option>
+                                <option value="500">500</option><option value="750">750</option><option value="1000">1000</option>
+                                <option value="1500">1500</option><option value="2000">2000</option><option value="3000">3000</option><option value="5000">5000</option>
+                                <option value="custom">Custom</option>
+                            </select>
+                            <input type="number" id="pieces-custom" placeholder="Pieces" style="display:none;margin-top:8px" min="1">
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label>Time</label>
+                        <div class="time-group">
+                            <div class="time-unit"><input type="number" id="time-hours" placeholder="0" min="0"><small>h</small></div>
+                            <span class="time-colon">:</span>
+                            <div class="time-unit"><input type="number" id="time-minutes" placeholder="00" min="0" max="59" required><small>m</small></div>
+                            <span class="time-colon">:</span>
+                            <div class="time-unit"><input type="number" id="time-seconds" placeholder="00" min="0" max="59" required><small>s</small></div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="field"><label>Puzzle Name</label><input type="text" id="puzzle_name" placeholder="e.g. Sunset Beach"></div>
+                        <div class="field"><label>Brand</label><input type="text" id="brand" placeholder="e.g. Ravensburger"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="field"><label>Difficulty</label>
+                            <div class="stars" id="star-rating">
+                                <button type="button" data-val="1">&#9733;</button>
+                                <button type="button" data-val="2">&#9733;</button>
+                                <button type="button" data-val="3">&#9733;</button>
+                                <button type="button" data-val="4">&#9733;</button>
+                                <button type="button" data-val="5">&#9733;</button>
+                            </div>
+                        </div>
+                        <div class="field"><label>Tags</label><input type="text" id="tags" placeholder="landscape, gradient"></div>
+                    </div>
+                    <div class="field"><label>Notes</label><textarea id="notes" rows="3" placeholder="Strategy, observations..."></textarea></div>
+
+                    <div class="preview-bar" id="scaled-preview">
+                        <span class="preview-lbl">500pc equivalent</span>
+                        <span class="preview-val" id="scaled-preview-time">--:--</span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">Save Puzzle</button>
+                </form>
+                <div class="toast" id="form-toast"></div>
+            </div>
+        </section>
+
+        <!-- HISTORY -->
+        <section class="page" id="page-history">
+            <div class="page-head">
+                <div><h1>History</h1><p class="page-desc">All sessions</p></div>
+                <div class="head-actions">
+                    <select id="filter-pieces" class="sel-sm"><option value="">All</option><option value="100">100pc</option><option value="200">200pc</option><option value="300">300pc</option><option value="500">500pc</option><option value="750">750pc</option><option value="1000">1000pc</option><option value="1500">1500pc</option><option value="2000">2000pc</option></select>
+                    <select id="sort-by" class="sel-sm"><option value="date">Date</option><option value="time">Time</option><option value="scaled">Scaled</option><option value="pieces">Pieces</option></select>
+                    <a href="/api/export/csv" class="btn btn-ghost btn-sm">Export CSV</a>
+                </div>
+            </div>
+            <div class="card glass no-pad">
+                <div class="table-scroll">
+                    <table>
+                        <thead><tr><th>Date</th><th>Puzzle</th><th>Pcs</th><th>Time</th><th>500pc Eq.</th><th>Pace</th><th>Diff</th><th></th></tr></thead>
+                        <tbody id="history-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- CHARTS -->
+        <section class="page" id="page-charts">
+            <div class="page-head"><div><h1>Analytics</h1><p class="page-desc">Performance deep-dive</p></div></div>
+            <div class="card glass full-w"><div class="card-head"><h3>Scaled Time with Moving Averages</h3></div><div class="chart-box chart-tall"><canvas id="trendChart"></canvas></div></div>
+            <div class="grid-2">
+                <div class="card glass"><div class="card-head"><h3>Best & Avg by Piece Count</h3></div><div class="chart-box"><canvas id="pieceChart"></canvas></div></div>
+                <div class="card glass"><div class="card-head"><h3>Pace (sec/piece)</h3></div><div class="chart-box"><canvas id="paceChart"></canvas></div></div>
+            </div>
+            <div class="grid-2">
+                <div class="card glass"><div class="card-head"><h3>Time Distribution</h3></div><div class="chart-box"><canvas id="distributionChart"></canvas></div></div>
+                <div class="card glass"><div class="card-head"><h3>By Piece Count</h3></div><div class="chart-box"><canvas id="pieCountChart"></canvas></div></div>
+            </div>
+            <div class="card glass full-w"><div class="card-head"><h3>Improvement Over Time</h3></div><div class="chart-box chart-tall"><canvas id="improvementChart"></canvas></div></div>
+            <div class="card glass full-w"><div class="card-head"><h3>Weekly Summary</h3></div><div class="chart-box chart-tall"><canvas id="weeklyChart"></canvas></div></div>
+        </section>
+
+        <!-- GOALS -->
+        <section class="page" id="page-goals">
+            <div class="page-head"><div><h1>Goals</h1><p class="page-desc">Set targets, track progress</p></div></div>
+            <div class="card glass compact-form">
+                <h3>Create Goal</h3>
+                <form id="goalForm" class="row-form">
+                    <select id="goal-pieces"><option value="100">100pc</option><option value="200">200pc</option><option value="300">300pc</option><option value="500" selected>500pc</option><option value="750">750pc</option><option value="1000">1000pc</option><option value="1500">1500pc</option><option value="2000">2000pc</option></select>
+                    <div class="time-group compact"><input type="number" id="goal-hours" placeholder="H" min="0"><span>:</span><input type="number" id="goal-minutes" placeholder="M" min="0" max="59" required><span>:</span><input type="number" id="goal-seconds" placeholder="S" min="0" max="59"></div>
+                    <input type="text" id="goal-desc" placeholder="Description">
+                    <button type="submit" class="btn btn-primary">Add</button>
+                </form>
+            </div>
+            <div class="goals-list" id="goals-list"></div>
+        </section>
+
+        <!-- ACHIEVEMENTS -->
+        <section class="page" id="page-achievements">
+            <div class="page-head"><div><h1>Achievements</h1><p class="page-desc">Your milestones</p></div></div>
+            <div class="ach-grid" id="achievements-grid"></div>
+        </section>
+
+        <!-- SETTINGS -->
+        <section class="page" id="page-settings">
+            <div class="page-head"><div><h1>Settings</h1><p class="page-desc">Customize your experience</p></div></div>
+            <div class="card glass form-card">
+                <div class="settings-block">
+                    <h3>Scaling Exponent</h3>
+                    <p class="help">Controls how times are normalized to 500-piece equivalent. Higher = larger puzzles considered harder.</p>
+                    <div class="slider-row">
+                        <input type="range" id="setting-exponent" min="0.5" max="1.0" step="0.01" value="0.73">
+                        <span class="slider-val" id="exponent-display">0.73</span>
+                    </div>
+                    <div class="presets">
+                        <button type="button" class="preset" data-val="0.60">0.60</button>
+                        <button type="button" class="preset active" data-val="0.73">0.73</button>
+                        <button type="button" class="preset" data-val="0.80">0.80</button>
+                        <button type="button" class="preset" data-val="0.90">0.90</button>
+                    </div>
+                    <div class="scale-table" id="scaling-preview"></div>
+                </div>
+                <div class="settings-block">
+                    <h3>Data</h3>
+                    <a href="/api/export/csv" class="btn btn-ghost">Export CSV</a>
+                </div>
+                <button class="btn btn-primary btn-block" id="save-settings">Save Settings</button>
+                <div class="toast" id="settings-toast"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Edit Modal -->
+    <div class="modal-bg" id="edit-modal">
+        <div class="modal glass">
+            <div class="modal-top"><h3>Edit Entry</h3><button class="modal-x" onclick="closeEditModal()">&times;</button></div>
+            <form id="editForm">
+                <input type="hidden" id="edit-id">
+                <div class="form-row">
+                    <div class="field"><label>Date</label><input type="date" id="edit-date" required></div>
+                    <div class="field"><label>Pieces</label><input type="number" id="edit-pieces" required min="1"></div>
+                </div>
+                <div class="field"><label>Time</label>
+                    <div class="time-group"><div class="time-unit"><input type="number" id="edit-hours" placeholder="H" min="0"><small>h</small></div><span class="time-colon">:</span><div class="time-unit"><input type="number" id="edit-minutes" placeholder="M" min="0" max="59"><small>m</small></div><span class="time-colon">:</span><div class="time-unit"><input type="number" id="edit-seconds" placeholder="S" min="0" max="59"><small>s</small></div></div>
+                </div>
+                <div class="form-row">
+                    <div class="field"><label>Name</label><input type="text" id="edit-name"></div>
+                    <div class="field"><label>Brand</label><input type="text" id="edit-brand"></div>
+                </div>
+                <div class="form-row">
+                    <div class="field"><label>Difficulty</label><input type="number" id="edit-difficulty" min="1" max="5"></div>
+                    <div class="field"><label>Tags</label><input type="text" id="edit-tags"></div>
+                </div>
+                <div class="field"><label>Notes</label><textarea id="edit-notes" rows="2"></textarea></div>
+                <div class="modal-btns">
+                    <button type="button" class="btn btn-ghost" onclick="closeEditModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PuzzlePace - {{ 'Sign In' if mode == 'login' else 'Create Account' }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --bg: #08080d;
+            --surface: rgba(255,255,255,0.03);
+            --surface-hover: rgba(255,255,255,0.06);
+            --border: rgba(255,255,255,0.08);
+            --text: #f0f0f5;
+            --text-secondary: #8888a0;
+            --text-muted: #55556a;
+            --accent: #7c5cfc;
+            --accent-glow: rgba(124,92,252,0.4);
+            --accent-soft: rgba(124,92,252,0.12);
+            --green: #34d399;
+            --red: #f87171;
+            --radius: 16px;
+        }
+
+        html, body { height: 100%; }
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Animated background */
+        .bg-effects {
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+        }
+        .bg-effects::before {
+            content: '';
+            position: absolute;
+            top: -40%; left: -20%;
+            width: 80%; height: 80%;
+            background: radial-gradient(ellipse, rgba(124,92,252,0.08) 0%, transparent 70%);
+            animation: float 20s ease-in-out infinite;
+        }
+        .bg-effects::after {
+            content: '';
+            position: absolute;
+            bottom: -30%; right: -20%;
+            width: 70%; height: 70%;
+            background: radial-gradient(ellipse, rgba(52,211,153,0.06) 0%, transparent 70%);
+            animation: float 25s ease-in-out infinite reverse;
+        }
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(1deg); }
+            66% { transform: translate(-20px, 20px) rotate(-1deg); }
+        }
+
+        /* Grid pattern */
+        .grid-pattern {
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+
+        /* Layout */
+        .auth-container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Left panel - branding */
+        .auth-brand {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 60px;
+            position: relative;
+        }
+
+        .brand-content {
+            max-width: 440px;
+            text-align: center;
+        }
+
+        .brand-logo {
+            width: 72px; height: 72px;
+            background: linear-gradient(135deg, var(--accent), #a78bfa);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 28px;
+            box-shadow: 0 8px 32px var(--accent-glow);
+        }
+
+        .brand-logo svg { width: 36px; height: 36px; color: white; }
+
+        .brand-title {
+            font-size: 2.4rem;
+            font-weight: 900;
+            letter-spacing: -1px;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #fff 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .brand-subtitle {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 48px;
+        }
+
+        .features-list {
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+
+        .feature-item:hover {
+            background: var(--surface-hover);
+            border-color: rgba(124,92,252,0.2);
+            transform: translateX(4px);
+        }
+
+        .feature-icon {
+            width: 36px; height: 36px;
+            border-radius: 8px;
+            background: var(--accent-soft);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            color: var(--accent);
+        }
+
+        .feature-text {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* Right panel - form */
+        .auth-form-panel {
+            width: 480px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 60px;
+            background: rgba(255,255,255,0.02);
+            border-left: 1px solid var(--border);
+            backdrop-filter: blur(20px);
+        }
+
+        .form-header {
+            margin-bottom: 36px;
+        }
+
+        .form-header h2 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+        }
+
+        .form-header p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .form-header p a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .form-header p a:hover { text-decoration: underline; }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            background: var(--surface);
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 0.95rem;
+            font-family: var(--font);
+            transition: all 0.2s;
+            outline: none;
+        }
+
+        .form-group input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px var(--accent-soft);
+            background: rgba(255,255,255,0.04);
+        }
+
+        .form-group input::placeholder { color: var(--text-muted); }
+
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, var(--accent), #9b7cfc);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 700;
+            font-family: var(--font);
+            cursor: pointer;
+            transition: all 0.25s;
+            margin-top: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px var(--accent-glow);
+        }
+
+        .submit-btn:active { transform: translateY(0); }
+
+        .submit-btn::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, transparent, rgba(255,255,255,0.1));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .submit-btn:hover::after { opacity: 1; }
+
+        .error-msg {
+            margin-top: 16px;
+            padding: 12px 16px;
+            background: rgba(248,113,113,0.1);
+            border: 1px solid rgba(248,113,113,0.2);
+            border-radius: 8px;
+            color: var(--red);
+            font-size: 0.88rem;
+            font-weight: 500;
+            display: none;
+            animation: shake 0.4s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            75% { transform: translateX(4px); }
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin: 24px 0;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .auth-brand { display: none; }
+            .auth-form-panel {
+                width: 100%;
+                border-left: none;
+                padding: 40px 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-effects"></div>
+    <div class="grid-pattern"></div>
+
+    <div class="auth-container">
+        <!-- Left branding panel -->
+        <div class="auth-brand">
+            <div class="brand-content">
+                <div class="brand-logo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                </div>
+                <h1 class="brand-title">PuzzlePace</h1>
+                <p class="brand-subtitle">Track your speed puzzling journey. Analyze performance, set goals, and watch yourself improve over time.</p>
+
+                <div class="features-list">
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                        </div>
+                        <span class="feature-text">Smart scaling normalizes times across all piece counts</span>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                        </div>
+                        <span class="feature-text">Beautiful charts and analytics track your progress</span>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+                        </div>
+                        <span class="feature-text">Set goals, earn achievements, build streaks</span>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        </div>
+                        <span class="feature-text">Built-in stopwatch for live timing sessions</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right form panel -->
+        <div class="auth-form-panel">
+            {% if mode == 'login' %}
+            <div class="form-header">
+                <h2>Welcome back</h2>
+                <p>Don't have an account? <a href="/register">Create one</a></p>
+            </div>
+            <form id="authForm">
+                <div class="form-group">
+                    <label for="identifier">Username or Email</label>
+                    <input type="text" id="identifier" name="identifier" placeholder="Enter your username or email" required autofocus>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                </div>
+                <button type="submit" class="submit-btn">Sign In</button>
+            </form>
+            {% else %}
+            <div class="form-header">
+                <h2>Create your account</h2>
+                <p>Already have an account? <a href="/login">Sign in</a></p>
+            </div>
+            <form id="authForm">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" placeholder="Choose a username" required autofocus minlength="3">
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" placeholder="you@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="At least 6 characters" required minlength="6">
+                </div>
+                <button type="submit" class="submit-btn">Create Account</button>
+            </form>
+            {% endif %}
+            <div class="error-msg" id="error-msg"></div>
+        </div>
+    </div>
+
+    <script>
+        const mode = '{{ mode }}';
+        document.getElementById('authForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const errorEl = document.getElementById('error-msg');
+            errorEl.style.display = 'none';
+
+            let url, body;
+            if (mode === 'login') {
+                url = '/api/auth/login';
+                body = {
+                    identifier: document.getElementById('identifier').value,
+                    password: document.getElementById('password').value,
+                };
+            } else {
+                url = '/api/auth/register';
+                body = {
+                    username: document.getElementById('username').value,
+                    email: document.getElementById('email').value,
+                    password: document.getElementById('password').value,
+                };
+            }
+
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    window.location.href = '/';
+                } else {
+                    errorEl.textContent = data.error || 'Something went wrong';
+                    errorEl.style.display = 'block';
+                }
+            } catch (err) {
+                errorEl.textContent = 'Network error. Please try again.';
+                errorEl.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
