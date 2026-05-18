@@ -569,6 +569,30 @@ tr.is-pb td:first-child { box-shadow: inset 3px 0 0 var(--green); }
     gap: 14px;
 }
 
+.ach-summary {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+}
+
+.ach-progress-ring {
+    position: relative;
+    width: 80px; height: 80px;
+}
+
+.ach-progress-ring svg {
+    width: 100%; height: 100%;
+    transform: rotate(-90deg);
+}
+
+.ach-progress-text {
+    position: absolute;
+    inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem; font-weight: 800; color: var(--purple);
+}
+
 .ach-card {
     background: var(--glass);
     border: 1px solid var(--glass-border);
@@ -815,4 +839,134 @@ tr.is-pb td:first-child { box-shadow: inset 3px 0 0 var(--green); }
 .save-success {
     animation: successPulse 0.4s var(--ease);
     border-color: rgba(52,211,153,0.3) !important;
+}
+
+/* ========== CONFETTI CANVAS ========== */
+#confetti-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+}
+
+/* ========== LEVEL / XP SYSTEM ========== */
+.level-badge {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 16px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    backdrop-filter: blur(12px);
+}
+
+.level-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.65rem; font-weight: 900; color: #fff;
+    text-transform: uppercase;
+    box-shadow: 0 2px 8px rgba(251,191,36,0.3);
+}
+
+.level-info { display: flex; flex-direction: column; gap: 3px; }
+.level-num { font-size: 0.82rem; font-weight: 800; }
+
+.xp-bar {
+    width: 80px; height: 5px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.xp-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #fbbf24, #f59e0b);
+    border-radius: 3px;
+    transition: width 0.5s var(--ease);
+    width: 0%;
+}
+
+.xp-text {
+    font-size: 0.7rem;
+    color: var(--text-3);
+    font-weight: 600;
+}
+
+/* ========== MOTIVATION BANNER ========== */
+.motivation-banner {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, var(--purple-soft), var(--blue-soft));
+    border: 1px solid rgba(124,92,252,0.12);
+    border-radius: var(--radius);
+    margin-bottom: 18px;
+    animation: fadeUp 0.5s var(--ease);
+}
+
+.motivation-emoji { font-size: 1.4rem; }
+.motivation-msg {
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.4;
+}
+
+/* ========== STREAK CHIP (animated when active) ========== */
+.chip-streak.on-fire {
+    background: var(--orange-soft);
+    border-color: rgba(251,146,60,0.25);
+    animation: fireGlow 2s ease-in-out infinite;
+}
+
+@keyframes fireGlow {
+    0%, 100% { box-shadow: 0 0 0 rgba(251,146,60,0); }
+    50% { box-shadow: 0 0 12px rgba(251,146,60,0.2); }
+}
+
+.chip-streak.on-fire .chip-val { color: var(--orange); }
+
+/* ========== FUN STATS ========== */
+.fun-stats {
+    display: grid; gap: 10px;
+}
+
+.fun-stat {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px;
+    background: var(--surface);
+    border-radius: var(--radius-xs);
+    font-size: 0.83rem;
+}
+
+.fun-stat-icon { font-size: 1.2rem; flex-shrink: 0; }
+.fun-stat-text { color: var(--text-2); }
+.fun-stat-val { font-weight: 700; color: var(--text); margin-left: auto; white-space: nowrap; }
+
+/* ========== PB CELEBRATION ========== */
+@keyframes pbShine {
+    0% { background-position: -100% 0; }
+    100% { background-position: 200% 0; }
+}
+
+.pb-new {
+    position: relative;
+    overflow: hidden;
+}
+.pb-new::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    background-size: 50% 100%;
+    animation: pbShine 1.5s ease-in-out;
+}
+
+/* ========== TOAST UPGRADE ========== */
+.toast.pb {
+    display: block;
+    background: linear-gradient(135deg, rgba(251,191,36,0.15), rgba(245,158,11,0.1));
+    color: #f59e0b;
+    border: 1px solid rgba(251,191,36,0.3);
+    font-weight: 600;
 }

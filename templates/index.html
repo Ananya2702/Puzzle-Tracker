@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
+    <!-- Confetti canvas -->
+    <canvas id="confetti-canvas"></canvas>
     <!-- Ambient background -->
     <div class="ambient-bg"></div>
 
@@ -90,6 +92,20 @@
         <section class="page active" id="page-dashboard">
             <div class="page-head">
                 <div><h1>Dashboard</h1><p class="page-desc">Your speed puzzling overview</p></div>
+                <div class="level-badge" id="level-badge">
+                    <div class="level-icon">Lv</div>
+                    <div class="level-info">
+                        <span class="level-num" id="level-num">1</span>
+                        <div class="xp-bar"><div class="xp-fill" id="xp-fill"></div></div>
+                    </div>
+                    <span class="xp-text" id="xp-text">0 XP</span>
+                </div>
+            </div>
+
+            <!-- Motivational banner -->
+            <div class="motivation-banner" id="motivation-banner">
+                <span class="motivation-emoji" id="motivation-emoji"></span>
+                <span class="motivation-msg" id="motivation-msg"></span>
             </div>
 
             <div class="kpi-row">
@@ -113,7 +129,7 @@
 
             <div class="mini-stats">
                 <div class="chip"><span class="chip-val" id="stat-hours">0</span><span class="chip-label">hours</span></div>
-                <div class="chip"><span class="chip-val" id="stat-streak">0</span><span class="chip-label">streak</span></div>
+                <div class="chip chip-streak" id="streak-chip"><span class="chip-val" id="stat-streak">0</span><span class="chip-label">streak</span></div>
                 <div class="chip"><span class="chip-val" id="stat-week">0</span><span class="chip-label">this week</span></div>
                 <div class="chip"><span class="chip-val" id="stat-pace-trend">--</span><span class="chip-label">trend</span></div>
                 <div class="chip"><span class="chip-val" id="stat-total-pieces">0</span><span class="chip-label">pieces</span></div>
@@ -130,9 +146,17 @@
                 </div>
             </div>
 
-            <div class="card glass">
-                <div class="card-head"><h3>Personal Bests</h3></div>
-                <div class="pb-row" id="personal-bests"><p class="placeholder">Complete your first puzzle to see records here</p></div>
+            <div class="grid-2">
+                <div class="card glass">
+                    <div class="card-head"><h3>Personal Bests</h3></div>
+                    <div class="pb-row" id="personal-bests"><p class="placeholder">Complete your first puzzle to see records here</p></div>
+                </div>
+                <div class="card glass">
+                    <div class="card-head"><h3>Fun Stats</h3><span class="tag">nerdy</span></div>
+                    <div class="fun-stats" id="fun-stats">
+                        <p class="placeholder">Complete some puzzles to unlock fun stats</p>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -173,6 +197,7 @@
             <div class="card glass form-card" id="quick-add-card" style="display:none">
                 <h3 style="margin-bottom:14px; font-size:0.9rem; color:var(--text-2)">Quick Add - just the essentials</h3>
                 <form id="quickForm">
+                    <div class="field"><label>Puzzle Name</label><input type="text" id="quick-name" placeholder="What did you solve?" required></div>
                     <div class="form-row">
                         <div class="field"><label>Pieces</label>
                             <div class="piece-btns" id="quick-piece-btns">

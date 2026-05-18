@@ -21,6 +21,227 @@ function fmtDateFull(d) { return new Date(d + 'T00:00:00').toLocaleDateString('e
 let EXPONENT = 0.73;
 function scaled(actual, pieces) { return actual * Math.pow(500 / pieces, EXPONENT); }
 
+// ============================================================
+// CONFETTI SYSTEM
+// ============================================================
+const confettiCanvas = document.getElementById('confetti-canvas');
+const confettiCtx = confettiCanvas.getContext('2d');
+let confettiPieces = [];
+let confettiActive = false;
+
+function resizeConfetti() {
+    confettiCanvas.width = window.innerWidth;
+    confettiCanvas.height = window.innerHeight;
+}
+resizeConfetti();
+window.addEventListener('resize', resizeConfetti);
+
+function launchConfetti(duration = 3000) {
+    confettiActive = true;
+    const colors = ['#7c5cfc', '#34d399', '#f87171', '#fbbf24', '#60a5fa', '#ec4899', '#a78bfa', '#fb923c'];
+    const startTime = Date.now();
+
+    for (let i = 0; i < 150; i++) {
+        confettiPieces.push({
+            x: Math.random() * confettiCanvas.width,
+            y: -20 - Math.random() * 100,
+            w: 4 + Math.random() * 6,
+            h: 8 + Math.random() * 8,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            vx: (Math.random() - 0.5) * 4,
+            vy: 2 + Math.random() * 4,
+            spin: Math.random() * 360,
+            spinSpeed: (Math.random() - 0.5) * 10,
+            opacity: 1,
+        });
+    }
+
+    function animate() {
+        if (!confettiActive) return;
+        confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+        const elapsed = Date.now() - startTime;
+        const fading = elapsed > duration - 800;
+
+        confettiPieces = confettiPieces.filter(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.12;
+            p.spin += p.spinSpeed;
+            if (fading) p.opacity -= 0.02;
+
+            if (p.y > confettiCanvas.height + 20 || p.opacity <= 0) return false;
+
+            confettiCtx.save();
+            confettiCtx.translate(p.x, p.y);
+            confettiCtx.rotate(p.spin * Math.PI / 180);
+            confettiCtx.globalAlpha = p.opacity;
+            confettiCtx.fillStyle = p.color;
+            confettiCtx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+            confettiCtx.restore();
+            return true;
+        });
+
+        if (confettiPieces.length > 0 && elapsed < duration) {
+            requestAnimationFrame(animate);
+        } else {
+            confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            confettiActive = false;
+            confettiPieces = [];
+        }
+    }
+    requestAnimationFrame(animate);
+}
+
+// ============================================================
+// XP / LEVEL SYSTEM (purely frontend, based on stats)
+// ============================================================
+function calculateLevel(stats) {
+    // XP formula: 50 per puzzle + 10 per hour + 100 per streak day + 200 per achievement
+    const puzzleXP = (stats.total_puzzles || 0) * 50;
+    const hourXP = (stats.total_time_hours || 0) * 10;
+    const streakXP = (stats.longest_streak || 0) * 100;
+    const totalXP = puzzleXP + hourXP + streakXP;
+
+    // Level curve: each level needs progressively more XP
+    let level = 1;
+    let xpForNext = 100;
+    let xpAccum = 0;
+
+    while (xpAccum + xpForNext <= totalXP) {
+        xpAccum += xpForNext;
+        level++;
+        xpForNext = Math.round(100 * Math.pow(1.4, level - 1));
+    }
+
+    const xpInCurrentLevel = totalXP - xpAccum;
+    const progress = Math.min(100, Math.round((xpInCurrentLevel / xpForNext) * 100));
+
+    return { level, totalXP, xpInCurrentLevel, xpForNext, progress };
+}
+
+function updateLevelDisplay(stats) {
+    const { level, totalXP, progress } = calculateLevel(stats);
+    document.getElementById('level-num').textContent = `Level ${level}`;
+    document.getElementById('xp-fill').style.width = `${progress}%`;
+    document.getElementById('xp-text').textContent = `${totalXP} XP`;
+}
+
+// ============================================================
+// MOTIVATIONAL MESSAGES
+// ============================================================
+const MOTIVATIONS = {
+    new_user: [
+        { emoji: '&#127942;', msg: "Welcome to Puzzle Geeks! Log your first puzzle to start tracking." },
+        { emoji: '&#128640;', msg: "Ready to track your puzzling journey? Start by logging a session!" },
+    ],
+    streak_active: [
+        { emoji: '&#128293;', msg: "You're on fire! {streak}-day streak going strong. Keep it alive!" },
+        { emoji: '&#9889;', msg: "{streak} days straight! You're becoming a puzzle machine!" },
+        { emoji: '&#127775;', msg: "Day {streak} of your streak! Consistency is the secret sauce." },
+    ],
+    improving: [
+        { emoji: '&#128200;', msg: "You've improved {imp}% from your early sessions. The grind pays off!" },
+        { emoji: '&#127881;', msg: "Getting faster! {imp}% improvement since you started. Keep pushing!" },
+    ],
+    lots_of_puzzles: [
+        { emoji: '&#129513;', msg: "{total} puzzles completed! That's {pieces} pieces you've conquered." },
+        { emoji: '&#128170;', msg: "You've spent {hours}h puzzling. That's dedication!" },
+    ],
+    general: [
+        { emoji: '&#129300;', msg: "Tip: Consistent practice matters more than marathon sessions." },
+        { emoji: '&#128161;', msg: "Pro tip: Sort edge pieces first, then group by color/pattern." },
+        { emoji: '&#127912;', msg: "Challenge yourself: Try a puzzle with an unusual color palette!" },
+        { emoji: '&#9200;', msg: "Speed puzzling secret: Look at the box less, trust your pattern recognition." },
+        { emoji: '&#128640;', msg: "The best puzzlers aren't fast at first. They're fast because they don't stop." },
+    ],
+};
+
+function getMotivation(stats) {
+    if (!stats.total_puzzles || stats.total_puzzles === 0) {
+        return pick(MOTIVATIONS.new_user);
+    }
+    // Prioritize streak messages
+    if (stats.current_streak >= 3) {
+        const m = pick(MOTIVATIONS.streak_active);
+        return { emoji: m.emoji, msg: m.msg.replace('{streak}', stats.current_streak) };
+    }
+    // Then improvement
+    if (stats.improvement_pct > 5) {
+        const m = pick(MOTIVATIONS.improving);
+        return { emoji: m.emoji, msg: m.msg.replace('{imp}', Math.round(stats.improvement_pct)) };
+    }
+    // Fun stats
+    if (stats.total_puzzles >= 5) {
+        const m = pick(MOTIVATIONS.lots_of_puzzles);
+        return { emoji: m.emoji, msg: m.msg.replace('{total}', stats.total_puzzles).replace('{pieces}', (stats.total_pieces||0).toLocaleString()).replace('{hours}', stats.total_time_hours) };
+    }
+    return pick(MOTIVATIONS.general);
+}
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function updateMotivation(stats) {
+    const m = getMotivation(stats);
+    document.getElementById('motivation-emoji').innerHTML = m.emoji;
+    document.getElementById('motivation-msg').textContent = m.msg;
+}
+
+// ============================================================
+// FUN STATS
+// ============================================================
+function updateFunStats(stats) {
+    const el = document.getElementById('fun-stats');
+    if (!stats.total_puzzles || stats.total_puzzles === 0) {
+        el.innerHTML = '<p class="placeholder">Complete some puzzles to unlock fun stats</p>';
+        return;
+    }
+
+    const funItems = [];
+
+    // Speed rank
+    const avgMin = stats.avg_scaled_time ? Math.round(stats.avg_scaled_time / 60) : 0;
+    if (avgMin > 0) {
+        let rank = 'Beginner';
+        if (avgMin <= 15) rank = 'Lightning';
+        else if (avgMin <= 25) rank = 'Speedster';
+        else if (avgMin <= 40) rank = 'Swift';
+        else if (avgMin <= 60) rank = 'Steady';
+        else if (avgMin <= 90) rank = 'Patient';
+        funItems.push({ icon: '&#9889;', text: 'Speed rank', val: rank });
+    }
+
+    // Total pieces as something tangible
+    if (stats.total_pieces) {
+        const football_fields = (stats.total_pieces * 4 / 10000).toFixed(1); // ~4cm2 per piece
+        funItems.push({ icon: '&#129513;', text: 'Pieces placed', val: stats.total_pieces.toLocaleString() });
+    }
+
+    // Time as something relatable
+    if (stats.total_time_hours >= 1) {
+        const movies = Math.round(stats.total_time_hours / 2);
+        if (movies > 0) funItems.push({ icon: '&#127916;', text: 'Could have watched', val: `${movies} movie${movies>1?'s':''}` });
+    }
+
+    // Longest streak
+    if (stats.longest_streak > 0) {
+        funItems.push({ icon: '&#128293;', text: 'Longest streak', val: `${stats.longest_streak} day${stats.longest_streak>1?'s':''}` });
+    }
+
+    // Favorite piece count
+    if (stats.favorite_piece_count) {
+        funItems.push({ icon: '&#128151;', text: 'Favorite size', val: `${stats.favorite_piece_count}pc` });
+    }
+
+    // Pace
+    if (stats.best_pace) {
+        funItems.push({ icon: '&#128640;', text: 'Fastest pace', val: `${stats.best_pace}s/piece` });
+    }
+
+    el.innerHTML = funItems.map(f =>
+        `<div class="fun-stat"><span class="fun-stat-icon">${f.icon}</span><span class="fun-stat-text">${f.text}</span><span class="fun-stat-val">${f.val}</span></div>`
+    ).join('');
+}
+
 // --- Chart defaults ---
 function setChartTheme() {
     const s = getComputedStyle(document.documentElement);
@@ -70,7 +291,7 @@ document.getElementById('logout-btn').addEventListener('click', async () => {
 function toast(id, msg, type) {
     const el = document.getElementById(id);
     el.textContent = msg; el.className = `toast ${type}`;
-    setTimeout(() => el.className = 'toast', 4000);
+    setTimeout(() => el.className = 'toast', 5000);
 }
 
 // ============================================================
@@ -98,6 +319,24 @@ async function loadDashboard() {
         document.getElementById('stat-week').textContent = stats.this_week_count;
         document.getElementById('stat-pace-trend').textContent = stats.pace_trend;
         document.getElementById('stat-total-pieces').textContent = (stats.total_pieces || 0).toLocaleString();
+
+        // Streak fire effect
+        const streakChip = document.getElementById('streak-chip');
+        if (stats.current_streak >= 3) {
+            streakChip.classList.add('on-fire');
+            document.getElementById('stat-streak').textContent = stats.current_streak + ' &#128293;';
+        } else {
+            streakChip.classList.remove('on-fire');
+        }
+
+        // Level system
+        updateLevelDisplay(stats);
+
+        // Motivation
+        updateMotivation(stats);
+
+        // Fun stats
+        updateFunStats(stats);
 
         // PBs
         const pb = document.getElementById('personal-bests');
@@ -184,8 +423,9 @@ document.getElementById('timer-save-btn').addEventListener('click', async () => 
     if (res.ok) {
         const p = await res.json();
         document.getElementById('timer-reset').click();
-        toast('form-toast', `Saved! ${fmt(p.time_seconds)} (500pc eq: ${fmt(Math.round(p.scaled_time_seconds))})`, 'success');
-        goTo('dashboard');
+        if (p.is_personal_best) { launchConfetti(); toast('form-toast', `NEW PERSONAL BEST! ${fmt(p.time_seconds)}`, 'pb'); }
+        else toast('form-toast', `Saved! ${fmt(p.time_seconds)} (500pc eq: ${fmt(Math.round(p.scaled_time_seconds))})`, 'success');
+        setTimeout(() => goTo('dashboard'), 1500);
     }
 });
 
@@ -229,6 +469,8 @@ function updQuickPreview() {
 
 document.getElementById('quickForm').addEventListener('submit', async (e) => {
     e.preventDefault();
+    const name = document.getElementById('quick-name').value.trim();
+    if (!name) return toast('quick-toast', 'Give your puzzle a name!', 'error');
     const h = parseInt(document.getElementById('quick-hours').value) || 0;
     const m = parseInt(document.getElementById('quick-minutes').value) || 0;
     const s = parseInt(document.getElementById('quick-seconds').value) || 0;
@@ -236,14 +478,19 @@ document.getElementById('quickForm').addEventListener('submit', async (e) => {
     if (total <= 0) return toast('quick-toast', 'Enter a time', 'error');
 
     const res = await fetch('/api/puzzles', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pieces: quickPieces, time_seconds: total, date: new Date().toISOString().split('T')[0] })
+        body: JSON.stringify({ pieces: quickPieces, time_seconds: total, puzzle_name: name, date: new Date().toISOString().split('T')[0] })
     });
     if (res.ok) {
         const p = await res.json();
-        toast('quick-toast', `Saved! ${quickPieces}pc in ${fmt(total)} (500pc eq: ${fmt(Math.round(p.scaled_time_seconds))})`, 'success');
+        if (p.is_personal_best) {
+            launchConfetti();
+            toast('quick-toast', `NEW PERSONAL BEST! ${name} - ${quickPieces}pc in ${fmt(total)}`, 'pb');
+        } else {
+            toast('quick-toast', `Saved! ${name} - ${quickPieces}pc in ${fmt(total)} (500pc eq: ${fmt(Math.round(p.scaled_time_seconds))})`, 'success');
+        }
         ['quick-hours','quick-minutes','quick-seconds'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('quick-name').value = '';
         document.getElementById('quick-preview').classList.remove('visible');
-        // Flash success animation
         document.getElementById('quick-add-card').classList.add('save-success');
         setTimeout(() => document.getElementById('quick-add-card').classList.remove('save-success'), 500);
     } else toast('quick-toast', 'Error saving', 'error');
@@ -287,8 +534,8 @@ document.getElementById('puzzleForm').addEventListener('submit', async (e) => {
     const m = parseInt(document.getElementById('time-minutes').value) || 0;
     const s = parseInt(document.getElementById('time-seconds').value) || 0;
     const total = h * 3600 + m * 60 + s;
-    if (!pcs || pcs <= 0) return toast('form-toast', 'Select pieces', 'error');
-    if (total <= 0) return toast('form-toast', 'Enter time', 'error');
+    if (!pcs || pcs <= 0) return toast('form-toast', 'Select piece count', 'error');
+    if (total <= 0) return toast('form-toast', 'Enter your time', 'error');
 
     const res = await fetch('/api/puzzles', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
         date: document.getElementById('date').value, pieces: pcs, time_seconds: total,
@@ -297,11 +544,15 @@ document.getElementById('puzzleForm').addEventListener('submit', async (e) => {
     })});
     if (res.ok) {
         const p = await res.json();
-        toast('form-toast', `Saved! ${pcs}pc in ${fmt(total)} (500pc eq: ${fmt(Math.round(p.scaled_time_seconds))})`, 'success');
+        if (p.is_personal_best) {
+            launchConfetti();
+            toast('form-toast', `NEW PERSONAL BEST! ${pcs}pc in ${fmt(total)}`, 'pb');
+        } else {
+            toast('form-toast', `Saved! ${pcs}pc in ${fmt(total)} (500pc eq: ${fmt(Math.round(p.scaled_time_seconds))})`, 'success');
+        }
         ['time-hours','time-minutes','time-seconds','puzzle_name','brand','notes','tags'].forEach(id => document.getElementById(id).value = '');
         document.getElementById('scaled-preview').classList.remove('visible');
         document.getElementById('date').value = new Date().toISOString().split('T')[0];
-        // Flash success
         document.getElementById('full-add-card').classList.add('save-success');
         setTimeout(() => document.getElementById('full-add-card').classList.remove('save-success'), 500);
     } else toast('form-toast', 'Error saving', 'error');
@@ -318,12 +569,13 @@ async function loadHistory() {
     const res = await fetch(url);
     const puzzles = await res.json();
     const tbody = document.getElementById('history-body');
-    if (!puzzles.length) { tbody.innerHTML = '<tr><td colspan="8" class="placeholder" style="text-align:center;padding:32px">No entries yet. Log your first puzzle!</td></tr>'; return; }
+    if (!puzzles.length) { tbody.innerHTML = '<tr><td colspan="8" class="placeholder" style="text-align:center;padding:32px">No entries yet. Go log your first puzzle!</td></tr>'; return; }
     tbody.innerHTML = puzzles.map(p => {
         const pace = (p.time_seconds / p.pieces).toFixed(1);
         const s = '<span style="color:var(--orange)">' + '&#9733;'.repeat(p.difficulty_rating) + '</span><span style="opacity:0.25">' + '&#9733;'.repeat(5 - p.difficulty_rating) + '</span>';
+        const pbBadge = p.is_personal_best ? ' <span class="tag" style="font-size:0.6rem">PB</span>' : '';
         return `<tr class="${p.is_personal_best ? 'is-pb' : ''}">
-            <td>${fmtDate(p.date)}</td><td><strong>${p.puzzle_name || '-'}</strong>${p.brand ? `<br><small style="color:var(--text-3)">${p.brand}</small>` : ''}</td>
+            <td>${fmtDate(p.date)}</td><td><strong>${p.puzzle_name || '-'}</strong>${pbBadge}${p.brand ? `<br><small style="color:var(--text-3)">${p.brand}</small>` : ''}</td>
             <td><strong>${p.pieces}</strong></td><td>${fmt(p.time_seconds)}</td><td>${fmt(Math.round(p.scaled_time_seconds))}</td>
             <td>${pace}s/pc</td><td>${s}</td>
             <td><button class="action-btn edit" onclick="openEdit(${p.id})">Edit</button> <button class="action-btn delete" onclick="delPuzzle(${p.id})">Del</button></td></tr>`;
@@ -410,22 +662,12 @@ document.getElementById('csv-file').addEventListener('change', (e) => {
 
 function parseTimeString(timeStr) {
     timeStr = timeStr.trim();
-    // Try pure seconds
     if (/^\d+$/.test(timeStr)) return parseInt(timeStr);
-    // Try h:mm:ss or hh:mm:ss
     const parts = timeStr.split(':');
-    if (parts.length === 3) {
-        return parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseInt(parts[2]);
-    }
-    // Try mm:ss
-    if (parts.length === 2) {
-        return parseInt(parts[0]) * 60 + parseInt(parts[1]);
-    }
-    // Try "Xh Ym Zs" format
+    if (parts.length === 3) return parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseInt(parts[2]);
+    if (parts.length === 2) return parseInt(parts[0]) * 60 + parseInt(parts[1]);
     const match = timeStr.match(/(?:(\d+)h)?\s*(?:(\d+)m)?\s*(?:(\d+)s)?/);
-    if (match && (match[1] || match[2] || match[3])) {
-        return (parseInt(match[1]||0) * 3600) + (parseInt(match[2]||0) * 60) + parseInt(match[3]||0);
-    }
+    if (match && (match[1] || match[2] || match[3])) return (parseInt(match[1]||0)*3600) + (parseInt(match[2]||0)*60) + parseInt(match[3]||0);
     return NaN;
 }
 
@@ -436,10 +678,7 @@ function handleCSVFile(file) {
         const lines = text.split(/\r?\n/).filter(l => l.trim());
         if (lines.length < 2) return toast('import-toast', 'CSV file is empty or has no data rows', 'error');
 
-        // Parse header
         const header = lines[0].split(',').map(h => h.trim().toLowerCase());
-        
-        // Try to find columns by name
         const dateIdx = header.findIndex(h => h.includes('date'));
         const piecesIdx = header.findIndex(h => h.includes('piece') || h === 'pcs');
         const timeIdx = header.findIndex(h => h.includes('time') && !h.includes('scaled'));
@@ -449,14 +688,12 @@ function handleCSVFile(file) {
         const notesIdx = header.findIndex(h => h.includes('note'));
         const tagsIdx = header.findIndex(h => h.includes('tag'));
 
-        // Fallback: positional if headers don't match
         const getCol = (row, idx, fallback) => idx >= 0 && idx < row.length ? row[idx].trim() : (fallback !== undefined ? fallback : '');
 
         importData = [];
         let errors = 0;
 
         for (let i = 1; i < lines.length; i++) {
-            // Handle CSV with commas inside quotes
             const row = parseCSVRow(lines[i]);
             if (row.length < 2) continue;
 
@@ -467,22 +704,15 @@ function handleCSVFile(file) {
             const pieces = parseInt(piecesRaw);
             const timeSeconds = parseTimeString(timeRaw);
 
-            // Validate date
             let parsedDate = date;
             if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-                // Try to parse other date formats
                 const d = new Date(date);
-                if (!isNaN(d.getTime())) {
-                    parsedDate = d.toISOString().split('T')[0];
-                } else {
-                    parsedDate = null;
-                }
+                parsedDate = !isNaN(d.getTime()) ? d.toISOString().split('T')[0] : null;
             }
 
             const entry = {
                 date: parsedDate || new Date().toISOString().split('T')[0],
-                pieces: pieces,
-                time_seconds: timeSeconds,
+                pieces, time_seconds: timeSeconds,
                 puzzle_name: getCol(row, nameIdx >= 0 ? nameIdx : 3, ''),
                 brand: getCol(row, brandIdx >= 0 ? brandIdx : 4, ''),
                 difficulty_rating: parseInt(getCol(row, diffIdx >= 0 ? diffIdx : 5, '3')) || 3,
@@ -494,24 +724,20 @@ function handleCSVFile(file) {
             if (!entry.valid) errors++;
             importData.push(entry);
         }
-
         showImportPreview(errors);
     };
     reader.readAsText(file);
 }
 
 function parseCSVRow(line) {
-    const result = [];
-    let current = '';
-    let inQuotes = false;
+    const result = []; let current = ''; let inQuotes = false;
     for (let i = 0; i < line.length; i++) {
         const ch = line[i];
         if (ch === '"') { inQuotes = !inQuotes; continue; }
         if (ch === ',' && !inQuotes) { result.push(current); current = ''; continue; }
         current += ch;
     }
-    result.push(current);
-    return result;
+    result.push(current); return result;
 }
 
 function showImportPreview(errors) {
@@ -523,11 +749,8 @@ function showImportPreview(errors) {
     document.getElementById('import-thead').innerHTML = '<tr><th>#</th><th>Date</th><th>Pieces</th><th>Time</th><th>Name</th><th>Status</th></tr>';
     document.getElementById('import-tbody').innerHTML = importData.slice(0, 50).map((entry, i) =>
         `<tr class="${entry.valid ? '' : 'error'}">
-            <td>${i + 1}</td>
-            <td>${entry.date}</td>
-            <td>${entry.valid ? entry.pieces : 'Invalid'}</td>
-            <td>${entry.valid ? fmtShort(entry.time_seconds) : 'Invalid'}</td>
-            <td>${entry.puzzle_name || '-'}</td>
+            <td>${i + 1}</td><td>${entry.date}</td><td>${entry.valid ? entry.pieces : 'Invalid'}</td>
+            <td>${entry.valid ? fmtShort(entry.time_seconds) : 'Invalid'}</td><td>${entry.puzzle_name || '-'}</td>
             <td>${entry.valid ? '<span style="color:var(--green)">OK</span>' : '<span style="color:var(--red)">Error</span>'}</td>
         </tr>`
     ).join('') + (importData.length > 50 ? `<tr><td colspan="6" style="text-align:center;color:var(--text-3)">... and ${importData.length - 50} more</td></tr>` : '');
@@ -537,7 +760,6 @@ function showImportPreview(errors) {
 }
 
 document.getElementById('import-cancel').addEventListener('click', resetImport);
-
 function resetImport() {
     importData = [];
     document.getElementById('import-zone').style.display = 'block';
@@ -550,8 +772,7 @@ document.getElementById('import-confirm').addEventListener('click', async () => 
     if (!valid.length) return toast('import-toast', 'No valid entries to import', 'error');
 
     const btn = document.getElementById('import-confirm');
-    btn.disabled = true;
-    btn.textContent = `Importing 0/${valid.length}...`;
+    btn.disabled = true; btn.textContent = `Importing 0/${valid.length}...`;
 
     let success = 0, fail = 0;
     for (let i = 0; i < valid.length; i++) {
@@ -559,29 +780,17 @@ document.getElementById('import-confirm').addEventListener('click', async () => 
         try {
             const res = await fetch('/api/puzzles', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    date: entry.date,
-                    pieces: entry.pieces,
-                    time_seconds: entry.time_seconds,
-                    puzzle_name: entry.puzzle_name,
-                    brand: entry.brand,
-                    difficulty_rating: entry.difficulty_rating,
-                    notes: entry.notes,
-                    tags: entry.tags,
-                })
+                body: JSON.stringify(entry)
             });
             if (res.ok) success++; else fail++;
         } catch (e) { fail++; }
-        if ((i + 1) % 5 === 0 || i === valid.length - 1) {
-            btn.textContent = `Importing ${i + 1}/${valid.length}...`;
-        }
+        if ((i + 1) % 5 === 0 || i === valid.length - 1) btn.textContent = `Importing ${i + 1}/${valid.length}...`;
     }
 
-    btn.disabled = false;
-    btn.textContent = 'Import All';
-    toast('import-toast', `Imported ${success} puzzles${fail > 0 ? ` (${fail} failed)` : ''}!`, success > 0 ? 'success' : 'error');
-    resetImport();
-    loadHistory();
+    btn.disabled = false; btn.textContent = 'Import All';
+    if (success > 0) launchConfetti(2000);
+    toast('import-toast', `Imported ${success} puzzles${fail > 0 ? ` (${fail} failed)` : ''}! +${success * 50} XP`, success > 0 ? 'success' : 'error');
+    resetImport(); loadHistory();
 });
 
 // ============================================================
@@ -662,7 +871,7 @@ function renderWeekly(d) {
 async function loadGoals() {
     const res = await fetch('/api/goals'); const goals = await res.json();
     const el = document.getElementById('goals-list');
-    if (!goals.length) { el.innerHTML = '<div class="placeholder">No goals yet. Create one above to start tracking!</div>'; return; }
+    if (!goals.length) { el.innerHTML = '<div class="placeholder">No goals yet. Set a target above and start chasing it!</div>'; return; }
     el.innerHTML = goals.map(g => `
         <div class="goal-card ${g.achieved?'done':''}">
             <div class="goal-info"><div class="goal-title">${g.pieces}pc in ${fmt(g.target_time_seconds)}</div><div class="goal-meta">${g.description||''}${g.achieved_date?` &mdash; Done ${fmtDateFull(g.achieved_date)}`:''}</div></div>
@@ -691,7 +900,15 @@ const ICONS = {'puzzle-piece':'&#129513;',star:'&#11088;',fire:'&#128293;',troph
 
 async function loadAchievements() {
     const res = await fetch('/api/achievements'); const achs = await res.json();
-    document.getElementById('achievements-grid').innerHTML = achs.map(a => `
+    const unlocked = achs.filter(a => a.unlocked).length;
+    document.getElementById('achievements-grid').innerHTML =
+        `<div class="ach-summary">
+            <div class="ach-progress-ring">
+                <svg viewBox="0 0 36 36"><path class="ach-bg-circle" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="var(--border)" stroke-width="3"/><path class="ach-fg-circle" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="var(--purple)" stroke-width="3" stroke-dasharray="${Math.round(unlocked/achs.length*100)}, 100" stroke-linecap="round"/></svg>
+                <span class="ach-progress-text">${unlocked}/${achs.length}</span>
+            </div>
+        </div>` +
+        achs.map(a => `
         <div class="ach-card ${a.unlocked?'unlocked':'locked'}">
             <div class="ach-icon">${ICONS[a.icon]||'&#127942;'}</div>
             <div class="ach-name">${a.name}</div>
