@@ -20,7 +20,23 @@ app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
 DATABASE_URL = os.environ.get('DATABASE_URL', '')
-DEFAULT_SCALING_EXPONENT = 0.73
+# A pure power-law normalization blows up at the extremes, so we keep the default
+# exponent modest and let users tune it all the way down toward 0 (= no scaling)
+# via the settings slider, with a live preview table as the arbiter.
+DEFAULT_SCALING_EXPONENT = 0.4
+
+# Columns added after the original schema shipped. init_db() migrates existing
+# databases (SQLite + Postgres) idempotently so old installs pick these up.
+PUZZLE_EXTRA_COLUMNS = [
+    ('source_id', 'TEXT'),                    # myspeedpuzzling result_id (dedupe key)
+    ('source', "TEXT DEFAULT ''"),            # e.g. 'speedpuzzling'
+    ('puzzle_type', "TEXT DEFAULT 'solo'"),   # solo | duo | team
+    ('community_avg_time', 'INTEGER'),        # avg solve time across all solvers
+    ('community_best_time', 'INTEGER'),       # fastest solve across all solvers
+    ('player_rank', 'INTEGER'),               # your rank on that puzzle
+    ('community_solvers', 'INTEGER'),         # how many people solved it
+    ('first_attempt', 'INTEGER DEFAULT 0'),   # was this your first go at the puzzle
+]
 
 # Determine if we're using PostgreSQL or SQLite
 USE_POSTGRES = DATABASE_URL.startswith('postgres')
@@ -296,6 +312,25 @@ def init_db():
         conn.close()
 
 
+def migrate_db():
+    """Add any newer columns to the puzzles table (idempotent, both backends)."""
+    if USE_POSTGRES:
+        conn = psycopg.connect(DATABASE_URL, autocommit=True)
+        cur = conn.cursor()
+        for name, ddl in PUZZLE_EXTRA_COLUMNS:
+            cur.execute(f"ALTER TABLE puzzles ADD COLUMN IF NOT EXISTS {name} {ddl}")
+        cur.close()
+        conn.close()
+    else:
+        conn = sqlite3.connect(DATABASE)
+        existing = {r[1] for r in conn.execute("PRAGMA table_info(puzzles)").fetchall()}
+        for name, ddl in PUZZLE_EXTRA_COLUMNS:
+            if name not in existing:
+                conn.execute(f"ALTER TABLE puzzles ADD COLUMN {name} {ddl}")
+        conn.commit()
+        conn.close()
+
+
 def setup_user_defaults(user_id):
     """Set up default settings and achievements for a new user."""
     if USE_POSTGRES:
@@ -410,13 +445,15 @@ def calculate_scaled_time(actual_time_seconds, pieces, exponent=None):
 
 
 def update_personal_bests(db, user_id):
+    # Only solo sessions compete for personal bests; duo/team times aren't comparable.
+    solo = "(puzzle_type = 'solo' OR puzzle_type IS NULL)"
     if USE_POSTGRES:
         db_execute(db, "UPDATE puzzles SET is_personal_best = 0 WHERE user_id = %s", (user_id,))
-        piece_counts = db_fetchall(db, "SELECT DISTINCT pieces FROM puzzles WHERE user_id = %s", (user_id,))
+        piece_counts = db_fetchall(db, f"SELECT DISTINCT pieces FROM puzzles WHERE user_id = %s AND {solo}", (user_id,))
         for row in piece_counts:
             pc = row['pieces']
             best = db_fetchone(db,
-                "SELECT id FROM puzzles WHERE user_id = %s AND pieces = %s ORDER BY time_seconds ASC LIMIT 1",
+                f"SELECT id FROM puzzles WHERE user_id = %s AND pieces = %s AND {solo} ORDER BY time_seconds ASC LIMIT 1",
                 (user_id, pc)
             )
             if best:
@@ -424,11 +461,11 @@ def update_personal_bests(db, user_id):
         db_commit(db)
     else:
         db.execute("UPDATE puzzles SET is_personal_best = 0 WHERE user_id = ?", (user_id,))
-        piece_counts = db.execute("SELECT DISTINCT pieces FROM puzzles WHERE user_id = ?", (user_id,)).fetchall()
+        piece_counts = db.execute(f"SELECT DISTINCT pieces FROM puzzles WHERE user_id = ? AND {solo}", (user_id,)).fetchall()
         for row in piece_counts:
             pc = row['pieces']
             best = db.execute(
-                "SELECT id FROM puzzles WHERE user_id = ? AND pieces = ? ORDER BY time_seconds ASC LIMIT 1",
+                f"SELECT id FROM puzzles WHERE user_id = ? AND pieces = ? AND {solo} ORDER BY time_seconds ASC LIMIT 1",
                 (user_id, pc)
             ).fetchone()
             if best:
@@ -521,11 +558,21 @@ def get_statistics(puzzles):
             'longest_streak': 0, 'avg_pieces': 0, 'favorite_piece_count': 0,
             'personal_bests': {}, 'pace_trend': 'N/A', 'total_pieces': 0,
             'avg_pace': 0, 'best_pace': 0, 'this_week_count': 0, 'this_month_count': 0,
+            'fastest_solve': 0, 'longest_solve': 0, 'biggest_puzzle': 0,
+            'brands_count': 0, 'days_active': 0, 'avg_difficulty': 0,
+            'first_try_count': 0, 'this_year_count': 0,
+            'community': {'has_data': False},
         }
 
     total_time = sum(p['time_seconds'] for p in puzzles)
     total_pieces = sum(p['pieces'] for p in puzzles)
-    scaled_times = [p['scaled_time_seconds'] for p in puzzles]
+    n_all = len(puzzles)
+
+    # Personal-performance metrics (bests, averages, pace, consistency) use solo
+    # sessions only -- duo/team times aren't comparable and would skew them. The
+    # volume metrics below (counts, hours, pieces, streaks, days) cover every session.
+    perf = [p for p in puzzles if (p.get('puzzle_type') or 'solo') == 'solo'] or puzzles
+    scaled_times = [p['scaled_time_seconds'] for p in perf]
     sorted_scaled = sorted(scaled_times)
 
     n = len(sorted_scaled)
@@ -561,16 +608,16 @@ def get_statistics(puzzles):
         current_streak = 1 if (today - last_date).days <= 1 else 0
 
     from collections import Counter
-    piece_counts = set(p['pieces'] for p in puzzles)
+    piece_counts = set(p['pieces'] for p in perf)
     personal_bests = {}
     for pc in sorted(piece_counts):
-        times_for_pc = [p['time_seconds'] for p in puzzles if p['pieces'] == pc]
+        times_for_pc = [p['time_seconds'] for p in perf if p['pieces'] == pc]
         personal_bests[pc] = min(times_for_pc)
 
-    piece_counter = Counter(p['pieces'] for p in puzzles)
+    piece_counter = Counter(p['pieces'] for p in perf)
     favorite_piece_count = piece_counter.most_common(1)[0][0]
 
-    paces = [p['time_seconds'] / p['pieces'] for p in puzzles]
+    paces = [p['time_seconds'] / p['pieces'] for p in perf]
 
     if len(scaled_times) >= 4:
         mid = len(scaled_times) // 2
@@ -583,9 +630,36 @@ def get_statistics(puzzles):
     today = datetime.now()
     week_start = (today - timedelta(days=today.weekday())).strftime('%Y-%m-%d')
     month_start = today.replace(day=1).strftime('%Y-%m-%d')
+    year_start = today.replace(month=1, day=1).strftime('%Y-%m-%d')
+
+    # --- Extra "interesting" general stats ---
+    times = [p['time_seconds'] for p in puzzles]
+    brands = {(p.get('brand') or '').strip() for p in puzzles if (p.get('brand') or '').strip()}
+    difficulties = [p['difficulty_rating'] for p in puzzles if p.get('difficulty_rating')]
+    first_try_count = sum(1 for p in puzzles if p.get('first_attempt'))
+
+    # --- Grounded community comparison (from myspeedpuzzling data) ---
+    with_avg = [p for p in puzzles if p.get('community_avg_time')]
+    ranks = [p['player_rank'] for p in puzzles if p.get('player_rank')]
+    beat_avg = sum(1 for p in with_avg if p['time_seconds'] < p['community_avg_time'])
+    pct_diffs = [
+        (p['community_avg_time'] - p['time_seconds']) / p['community_avg_time'] * 100
+        for p in with_avg if p['community_avg_time'] > 0
+    ]
+    community = {
+        'has_data': bool(with_avg or ranks),
+        'compared_count': len(with_avg),
+        'beat_avg_count': beat_avg,
+        'avg_vs_community_pct': round(sum(pct_diffs) / len(pct_diffs), 1) if pct_diffs else 0,
+        'best_vs_community_pct': round(max(pct_diffs), 1) if pct_diffs else 0,
+        'best_rank': min(ranks) if ranks else 0,
+        'podiums': sum(1 for r in ranks if r <= 3),
+        'top10': sum(1 for r in ranks if r <= 10),
+        'ranked_count': len(ranks),
+    }
 
     return {
-        'total_puzzles': n,
+        'total_puzzles': n_all,
         'total_time_hours': round(total_time / 3600, 1),
         'total_pieces': total_pieces,
         'avg_scaled_time': round(avg),
@@ -596,7 +670,7 @@ def get_statistics(puzzles):
         'improvement_pct': round(improvement_pct, 1),
         'current_streak': current_streak,
         'longest_streak': longest_streak,
-        'avg_pieces': round(sum(p['pieces'] for p in puzzles) / n),
+        'avg_pieces': round(total_pieces / n_all),
         'favorite_piece_count': favorite_piece_count,
         'personal_bests': personal_bests,
         'pace_trend': pace_trend,
@@ -604,6 +678,15 @@ def get_statistics(puzzles):
         'best_pace': round(min(paces), 2),
         'this_week_count': sum(1 for p in puzzles if p['date'] >= week_start),
         'this_month_count': sum(1 for p in puzzles if p['date'] >= month_start),
+        'this_year_count': sum(1 for p in puzzles if p['date'] >= year_start),
+        'fastest_solve': min(times),
+        'longest_solve': max(times),
+        'biggest_puzzle': max(p['pieces'] for p in puzzles),
+        'brands_count': len(brands),
+        'days_active': len(dates),
+        'avg_difficulty': round(sum(difficulties) / len(difficulties), 1) if difficulties else 0,
+        'first_try_count': first_try_count,
+        'community': community,
     }
 
 
@@ -1139,6 +1222,119 @@ def export_csv():
                     headers={'Content-Disposition': 'attachment; filename=puzzle_times.csv'})
 
 
+@app.route('/api/import/speedpuzzling', methods=['POST'])
+@login_required
+def import_speedpuzzling():
+    """Bulk-import a myspeedpuzzling JSON export, skipping anything already logged.
+
+    Dedupe is by result_id (the export's unique key) and, as a fallback for
+    entries logged manually before this feature, by (date, pieces, time_seconds).
+    """
+    payload = request.get_json()
+    if isinstance(payload, dict):
+        records = payload.get('records', [])
+        include_types = payload.get('include_types') or ['solo']
+    else:
+        records = payload or []
+        include_types = ['solo']
+    include_types = set(include_types)
+
+    db = get_db()
+    uid = current_user.id
+    exponent = get_scaling_exponent(uid)
+
+    # Build dedupe sets from what the user already has.
+    if USE_POSTGRES:
+        existing = db_fetchall(db, "SELECT source_id, date, pieces, time_seconds FROM puzzles WHERE user_id = %s", (uid,))
+    else:
+        existing = db.execute("SELECT source_id, date, pieces, time_seconds FROM puzzles WHERE user_id = ?", (uid,)).fetchall()
+    existing_source = set()
+    existing_key = set()
+    for row in existing:
+        r = row_to_dict(row)
+        if r.get('source_id'):
+            existing_source.add(r['source_id'])
+        existing_key.add((r['date'], r['pieces'], r['time_seconds']))
+
+    imported = duplicates = skipped_type = invalid = 0
+
+    def _int(v):
+        try:
+            return int(v) if v is not None else None
+        except (ValueError, TypeError):
+            return None
+
+    for rec in records:
+        try:
+            ptype = (rec.get('type') or 'solo').lower()
+            if ptype not in include_types:
+                skipped_type += 1
+                continue
+            pieces = _int(rec.get('pieces_count'))
+            secs = _int(rec.get('seconds_to_solve'))
+            if not pieces or pieces <= 0 or not secs or secs <= 0:
+                invalid += 1
+                continue
+
+            date = (rec.get('finished_at') or rec.get('tracked_at') or '')[:10]
+            if not date:
+                date = datetime.now().strftime('%Y-%m-%d')
+            sid = rec.get('result_id')
+
+            if sid and sid in existing_source:
+                duplicates += 1
+                continue
+            if (date, pieces, secs) in existing_key:
+                duplicates += 1
+                continue
+
+            scaled = calculate_scaled_time(secs, pieces, exponent)
+            name = rec.get('puzzle_name') or ''
+            brand = rec.get('brand_name') or ''
+            first = 1 if rec.get('first_attempt') else 0
+            cavg = _int(rec.get('puzzle_average_time'))
+            cbest = _int(rec.get('puzzle_fastest_time'))
+            prank = _int(rec.get('player_rank'))
+            csolvers = _int(rec.get('puzzle_total_solved'))
+
+            cols = (uid, date, pieces, secs, scaled, name, brand, sid, 'speedpuzzling',
+                    ptype, cavg, cbest, prank, csolvers, first)
+            if USE_POSTGRES:
+                db_execute(db, '''
+                    INSERT INTO puzzles (user_id, date, pieces, time_seconds, scaled_time_seconds,
+                        puzzle_name, brand, source_id, source, puzzle_type, community_avg_time,
+                        community_best_time, player_rank, community_solvers, first_attempt)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                ''', cols)
+            else:
+                db.execute('''
+                    INSERT INTO puzzles (user_id, date, pieces, time_seconds, scaled_time_seconds,
+                        puzzle_name, brand, source_id, source, puzzle_type, community_avg_time,
+                        community_best_time, player_rank, community_solvers, first_attempt)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                ''', cols)
+
+            if sid:
+                existing_source.add(sid)
+            existing_key.add((date, pieces, secs))
+            imported += 1
+        except Exception:
+            invalid += 1
+
+    db_commit(db)
+    if imported:
+        update_personal_bests(db, uid)
+        check_achievements(db, uid)
+
+    return jsonify({
+        'imported': imported,
+        'duplicates': duplicates,
+        'skipped_type': skipped_type,
+        'invalid': invalid,
+        'total': len(records),
+    })
+
+
 @app.route('/api/scaling_info', methods=['GET'])
 @login_required
 def get_scaling_info():
@@ -1153,6 +1349,7 @@ def get_scaling_info():
 
 # Always initialize the database (works for both local and WSGI deployment)
 init_db()
+migrate_db()
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
