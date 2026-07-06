@@ -5,7 +5,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
-    testTimeout: 20000, // pglite migration setup can be slow on first run
+    testTimeout: 20000, // generous timeout: later DB tests run in-memory migrations on first use
   },
   resolve: {
     alias: { '@': path.resolve(__dirname, 'src') },

@@ -17,7 +17,12 @@ export function parseDuration(input: string): number | null {
   if (parts.length < 2 || parts.length > 3 || parts.some((p) => !/^\d+$/.test(p))) return null;
   const nums = parts.map((p) => parseInt(p, 10));
   const [a, b, c] = nums.length === 3 ? nums : [0, nums[0], nums[1]];
-  if (b > 59 || c > 59) return null;
-  if (nums.length === 3 && nums[0] > 0 && nums[1] > 59) return null;
+  // For 3-part (h:mm:ss): minutes and seconds must be ≤ 59
+  // For 2-part (m:ss): only seconds must be ≤ 59
+  if (nums.length === 3) {
+    if (b > 59 || c > 59) return null;
+  } else {
+    if (c > 59) return null;
+  }
   return a * 3600 + b * 60 + c;
 }

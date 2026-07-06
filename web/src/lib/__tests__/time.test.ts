@@ -37,4 +37,10 @@ describe('parseDuration', () => {
     expect(parseDuration('1:99')).toBeNull();
     expect(parseDuration('')).toBeNull();
   });
+  it('accepts m:ss with minutes over 59', () => {
+    expect(parseDuration('75:00')).toBe(4500);
+  });
+  it('rejects h:mm:ss with minutes over 59', () => {
+    expect(parseDuration('1:75:00')).toBeNull();
+  });
 });
