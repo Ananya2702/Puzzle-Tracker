@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { makeTestDb } from '@/db/test-db';
 import {
-  createUser, verifyCredentials, findOrCreateGoogleUser, setTheme, registerSchema,
+  createUser, verifyCredentials, findOrCreateGoogleUser, setTheme, registerSchema, uniqueViolation,
 } from '@/lib/users';
 
 describe('registerSchema', () => {
@@ -54,5 +54,21 @@ describe('user services', () => {
     const u = await createUser(db, { username: 'zoe', email: 'z@x.com', password: 'longenough' });
     await setTheme(db, u.id, 'cozy');
     expect((await verifyCredentials(db, 'zoe', 'longenough'))?.theme).toBe('cozy');
+  });
+
+  it('verifyCredentials returns null for OAuth-only users (null passwordHash)', async () => {
+    const db = await makeTestDb();
+    const u = await findOrCreateGoogleUser(db, { email: 'oauth@x.com', name: 'O', providerAccountId: 'g-9' });
+    expect(await verifyCredentials(db, 'oauth@x.com', 'anything')).toBeNull();
+    expect(await verifyCredentials(db, u.username, 'anything')).toBeNull();
+  });
+});
+
+describe('uniqueViolation', () => {
+  it('maps unique violations from error or cause chain', () => {
+    expect(uniqueViolation(Object.assign(new Error('x'), { code: '23505', constraint_name: 'users_username_unique' }))).toContain('username');
+    const wrapped = new Error('outer'); (wrapped as Error & { cause?: unknown }).cause = Object.assign(new Error('duplicate key value violates unique constraint "users_email_unique"'), { code: '23505' });
+    expect(uniqueViolation(wrapped)).toContain('email');
+    expect(uniqueViolation(new Error('connection refused'))).toBeNull();
   });
 });

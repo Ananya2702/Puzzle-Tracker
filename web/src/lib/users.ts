@@ -16,16 +16,36 @@ const toPublic = (u: typeof users.$inferSelect): PublicUser => ({
   id: u.id, username: u.username, email: u.email, theme: u.theme,
 });
 
+export function uniqueViolation(e: unknown): string | null {
+  for (let err = e; err instanceof Error; err = err.cause as Error) {
+    const maybe = err as { code?: string; constraint_name?: string; constraint?: string; message: string };
+    if (maybe.code === '23505' || /duplicate key value/i.test(maybe.message)) {
+      return maybe.constraint_name ?? maybe.constraint ?? maybe.message;
+    }
+    if (!(err.cause instanceof Error)) break;
+  }
+  return null;
+}
+
 export async function createUser(db: Db, input: z.infer<typeof registerSchema>): Promise<PublicUser> {
   const [byName] = await db.select().from(users).where(eq(users.username, input.username));
   if (byName) throw new Error('USERNAME_TAKEN');
   const [byEmail] = await db.select().from(users).where(eq(users.email, input.email));
   if (byEmail) throw new Error('EMAIL_TAKEN');
-  const [row] = await db
-    .insert(users)
-    .values({ username: input.username, email: input.email, passwordHash: await hashPassword(input.password) })
-    .returning();
-  return toPublic(row);
+  try {
+    const [row] = await db
+      .insert(users)
+      .values({ username: input.username, email: input.email, passwordHash: await hashPassword(input.password) })
+      .returning();
+    return toPublic(row);
+  } catch (e) {
+    const violation = uniqueViolation(e);
+    if (violation) {
+      if (/username/i.test(violation)) throw new Error('USERNAME_TAKEN');
+      if (/email/i.test(violation)) throw new Error('EMAIL_TAKEN');
+    }
+    throw e;
+  }
 }
 
 export async function verifyCredentials(db: Db, identifier: string, password: string): Promise<PublicUser | null> {
@@ -42,12 +62,20 @@ export async function findOrCreateGoogleUser(
   input: { email: string; name: string; providerAccountId: string },
 ): Promise<PublicUser> {
   const [existing] = await db.select().from(users).where(eq(users.email, input.email));
-  const user =
-    existing ??
-    (await db
-      .insert(users)
-      .values({ username: await availableUsername(db, input.email), email: input.email, passwordHash: null })
-      .returning())[0];
+  let user = existing;
+  if (!user) {
+    try {
+      [user] = await db
+        .insert(users)
+        .values({ username: await availableUsername(db, input.email), email: input.email, passwordHash: null })
+        .returning();
+    } catch (e) {
+      if (!uniqueViolation(e)) throw e;
+      const [reselected] = await db.select().from(users).where(eq(users.email, input.email));
+      if (!reselected) throw e;
+      user = reselected;
+    }
+  }
   await db
     .insert(oauthAccounts)
     .values({ provider: 'google', providerAccountId: input.providerAccountId, userId: user.id })
