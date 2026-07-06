@@ -36,7 +36,16 @@ export default function RegisterPage() {
       setBusy(false);
       return;
     }
-    await signIn('credentials', { identifier: payload.username, password: payload.password, redirect: false });
+    const login = await signIn('credentials', {
+      identifier: payload.username,
+      password: payload.password,
+      redirect: false,
+    });
+    if (login?.error) {
+      // Account exists but auto-login failed (rare, e.g. transient error): send them to sign in manually.
+      router.push('/login');
+      return;
+    }
     router.push('/dashboard');
     router.refresh();
   }

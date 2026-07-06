@@ -1,13 +1,17 @@
 import type { NextAuthConfig } from 'next-auth';
 
-const PROTECTED = /^\/(dashboard|timer|log|history|analytics|goals|awards|settings)/;
+const PROTECTED = /^\/(dashboard|timer|log|history|analytics|goals|awards|settings)(\/|$)/;
+
+export function isProtectedPath(pathname: string): boolean {
+  return PROTECTED.test(pathname);
+}
 
 export const authConfig = {
   pages: { signIn: '/login' },
   session: { strategy: 'jwt' },
   callbacks: {
     authorized({ auth, request }) {
-      if (PROTECTED.test(request.nextUrl.pathname) && !auth?.user) return false;
+      if (isProtectedPath(request.nextUrl.pathname) && !auth?.user) return false;
       return true;
     },
     jwt({ token, user }) {
