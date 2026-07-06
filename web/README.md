@@ -1,36 +1,33 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Puzzle Geeks (web)
 
-## Getting Started
+Next.js rewrite of Puzzle Geeks. The legacy Flask app lives at the repo root
+and stays deployed until cutover (see Plan 3).
 
-First, run the development server:
+## Develop
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+    npm install
+    cp .env.example .env.local   # fill in AUTH_SECRET + dev-branch DATABASE_URL
+    npx drizzle-kit migrate      # apply migrations to your dev DB
+    npm run dev
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Test
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+    npm test        # vitest (uses in-memory PGlite; no DB needed)
+    npm run e2e     # Playwright; see playwright.config.ts header for DB setup
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Deploy (Vercel)
 
-## Learn More
+1. Push to GitHub. In Vercel: New Project → import this repo.
+2. Set **Root Directory = `web`**. Framework auto-detects Next.js.
+3. Environment variables: `DATABASE_URL` (Neon **pooled** connection string),
+   `AUTH_SECRET` (openssl rand -base64 32), and optionally
+   `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`
+   (callback URL: `https://<domain>/api/auth/callback/google`).
+4. Apply migrations to prod (from `web/`):
+   `DATABASE_URL=<prod-url> npx drizzle-kit migrate`
+   — do this BEFORE the first deploy that uses a new migration.
+5. Deploys are automatic per push; each branch gets a preview URL.
 
-To learn more about Next.js, take a look at the following resources:
+## Structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+See `docs/superpowers/plans/2026-07-07-revamp-1-foundation.md` for the map.
