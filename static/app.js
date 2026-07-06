@@ -18,7 +18,7 @@ function fmtShort(s) {
 function fmtDate(d) { return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); }
 function fmtDateFull(d) { return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
 
-let EXPONENT = 0.73;
+let EXPONENT = 0.4;
 function scaled(actual, pieces) { return actual * Math.pow(500 / pieces, EXPONENT); }
 
 // ============================================================
@@ -237,8 +237,48 @@ function updateFunStats(stats) {
         funItems.push({ icon: '&#128640;', text: 'Fastest pace', val: `${stats.best_pace}s/piece` });
     }
 
+    // Fastest & longest single solves
+    if (stats.fastest_solve) funItems.push({ icon: '&#9201;', text: 'Fastest solve', val: fmtShort(stats.fastest_solve) });
+    if (stats.longest_solve) funItems.push({ icon: '&#127977;', text: 'Longest solve', val: fmtShort(stats.longest_solve) });
+    // First-attempt wins
+    if (stats.first_try_count) funItems.push({ icon: '&#127919;', text: 'First-try solves', val: stats.first_try_count });
+    // Biggest puzzle conquered
+    if (stats.biggest_puzzle) funItems.push({ icon: '&#127956;', text: 'Biggest conquered', val: `${stats.biggest_puzzle.toLocaleString()}pc` });
+    // Consistency (lower std dev = steadier)
+    if (stats.std_deviation && stats.avg_scaled_time) {
+        const cv = stats.std_deviation / stats.avg_scaled_time;
+        let consistency = cv < 0.15 ? 'Metronome' : cv < 0.3 ? 'Steady' : cv < 0.5 ? 'Variable' : 'Wild card';
+        funItems.push({ icon: '&#127922;', text: 'Consistency', val: consistency });
+    }
+    // Brands explored
+    if (stats.brands_count) funItems.push({ icon: '&#127981;', text: 'Brands explored', val: stats.brands_count });
+
     el.innerHTML = funItems.map(f =>
         `<div class="fun-stat"><span class="fun-stat-icon">${f.icon}</span><span class="fun-stat-text">${f.text}</span><span class="fun-stat-val">${f.val}</span></div>`
+    ).join('');
+}
+
+// ============================================================
+// COMMUNITY STANDING (grounded in myspeedpuzzling data)
+// ============================================================
+function updateCommunity(c) {
+    const card = document.getElementById('community-card');
+    if (!c || !c.has_data) { card.style.display = 'none'; return; }
+    card.style.display = 'block';
+
+    const items = [];
+    if (c.best_rank) {
+        const medal = c.best_rank === 1 ? '&#129351;' : c.best_rank === 2 ? '&#129352;' : c.best_rank === 3 ? '&#129353;' : '&#127942;';
+        items.push({ icon: medal, val: `#${c.best_rank}`, label: 'Best finish' });
+    }
+    if (c.podiums) items.push({ icon: '&#127942;', val: c.podiums, label: 'Podium finishes' });
+    if (c.top10) items.push({ icon: '&#11088;', val: c.top10, label: 'Top-10 finishes' });
+    if (c.ranked_count) items.push({ icon: '&#128101;', val: c.ranked_count, label: 'Puzzles ranked' });
+    if (c.beat_avg_count) items.push({ icon: '&#9889;', val: c.beat_avg_count, label: 'Beat the average' });
+    if (c.best_vs_community_pct > 0) items.push({ icon: '&#128200;', val: `${c.best_vs_community_pct}%`, label: 'Best vs. average' });
+
+    document.getElementById('community-grid').innerHTML = items.map(i =>
+        `<div class="community-stat"><span class="community-icon">${i.icon}</span><span class="community-val">${i.val}</span><span class="community-label">${i.label}</span></div>`
     ).join('');
 }
 
@@ -319,12 +359,18 @@ async function loadDashboard() {
         document.getElementById('stat-week').textContent = stats.this_week_count;
         document.getElementById('stat-pace-trend').textContent = stats.pace_trend;
         document.getElementById('stat-total-pieces').textContent = (stats.total_pieces || 0).toLocaleString();
+        document.getElementById('stat-days').textContent = stats.days_active || 0;
+        document.getElementById('stat-biggest').textContent = (stats.biggest_puzzle || 0).toLocaleString();
+        document.getElementById('stat-brands').textContent = stats.brands_count || 0;
+
+        // Community standing
+        updateCommunity(stats.community);
 
         // Streak fire effect
         const streakChip = document.getElementById('streak-chip');
         if (stats.current_streak >= 3) {
             streakChip.classList.add('on-fire');
-            document.getElementById('stat-streak').textContent = stats.current_streak + ' &#128293;';
+            document.getElementById('stat-streak').textContent = stats.current_streak + ' \u{1F525}';
         } else {
             streakChip.classList.remove('on-fire');
         }
@@ -620,9 +666,11 @@ document.getElementById('editForm').addEventListener('submit', async (e) => {
 async function delPuzzle(id) { if (!confirm('Delete this entry?')) return; await fetch(`/api/puzzles/${id}`, { method: 'DELETE' }); loadHistory(); }
 
 // ============================================================
-// CSV IMPORT
+// IMPORT (myspeedpuzzling JSON + CSV)
 // ============================================================
-let importData = [];
+let importData = [];        // CSV rows
+let spImportData = [];      // myspeedpuzzling records
+let importMode = 'speedpuzzling';
 
 document.getElementById('toggle-import').addEventListener('click', () => {
     const panel = document.getElementById('import-panel');
@@ -634,6 +682,17 @@ document.getElementById('close-import').addEventListener('click', () => {
     resetImport();
 });
 
+// Tabs
+document.querySelectorAll('.import-tab').forEach(tab => tab.addEventListener('click', () => {
+    importMode = tab.dataset.mode;
+    document.querySelectorAll('.import-tab').forEach(t => t.classList.toggle('active', t === tab));
+    document.getElementById('mode-speedpuzzling').style.display = importMode === 'speedpuzzling' ? 'block' : 'none';
+    document.getElementById('mode-csv').style.display = importMode === 'csv' ? 'block' : 'none';
+    document.getElementById('drop-hint').textContent = importMode === 'speedpuzzling' ? '(.json export)' : '(.csv file)';
+    document.getElementById('csv-file').accept = importMode === 'speedpuzzling' ? '.json' : '.csv';
+    resetImport();
+}));
+
 document.getElementById('browse-file').addEventListener('click', (e) => {
     e.preventDefault();
     document.getElementById('csv-file').click();
@@ -642,6 +701,12 @@ document.getElementById('browse-file').addEventListener('click', (e) => {
 document.getElementById('drop-area').addEventListener('click', () => {
     document.getElementById('csv-file').click();
 });
+
+function dispatchFile(file) {
+    if (file.name.endsWith('.json')) handleJSONFile(file);
+    else if (file.name.endsWith('.csv')) handleCSVFile(file);
+    else toast('import-toast', 'Please choose a .json or .csv file', 'error');
+}
 
 // Drag & drop
 const dropArea = document.getElementById('drop-area');
@@ -652,13 +717,82 @@ const dropArea = document.getElementById('drop-area');
     e.preventDefault(); dropArea.classList.remove('dragover');
 }));
 dropArea.addEventListener('drop', (e) => {
-    const files = e.dataTransfer.files;
-    if (files.length > 0 && files[0].name.endsWith('.csv')) handleCSVFile(files[0]);
+    if (e.dataTransfer.files.length > 0) dispatchFile(e.dataTransfer.files[0]);
 });
 
 document.getElementById('csv-file').addEventListener('change', (e) => {
-    if (e.target.files.length > 0) handleCSVFile(e.target.files[0]);
+    if (e.target.files.length > 0) dispatchFile(e.target.files[0]);
 });
+
+// --- myspeedpuzzling JSON ---
+function handleJSONFile(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        let data;
+        try { data = JSON.parse(e.target.result); }
+        catch (err) { return toast('import-toast', 'Could not parse JSON file', 'error'); }
+        if (!Array.isArray(data)) data = data.records || [];
+        if (!data.length) return toast('import-toast', 'No records found in file', 'error');
+        // Basic shape check
+        if (!('pieces_count' in data[0]) && !('seconds_to_solve' in data[0])) {
+            return toast('import-toast', "This doesn't look like a myspeedpuzzling export", 'error');
+        }
+        spImportData = data;
+        showSpPreview();
+    };
+    reader.readAsText(file);
+}
+
+function showSpPreview() {
+    const includeTeams = document.getElementById('sp-include-teams').checked;
+    const types = includeTeams ? ['solo', 'duo', 'team'] : ['solo'];
+    const rows = spImportData.filter(r => types.includes((r.type || 'solo').toLowerCase()));
+    const valid = rows.filter(r => r.pieces_count > 0 && r.seconds_to_solve > 0);
+
+    document.getElementById('import-summary').innerHTML =
+        `Found <strong>${spImportData.length}</strong> records &mdash; <strong>${valid.length}</strong> ready to import. ` +
+        `<span style="color:var(--text-3)">Already-logged puzzles are skipped automatically.</span>`;
+
+    document.getElementById('import-thead').innerHTML = '<tr><th>Date</th><th>Puzzle</th><th>Pcs</th><th>Time</th><th>Type</th><th>Rank</th></tr>';
+    document.getElementById('import-tbody').innerHTML = valid.slice(0, 50).map(r =>
+        `<tr><td>${(r.finished_at || r.tracked_at || '').slice(0, 10)}</td>
+         <td>${r.puzzle_name || '-'}</td><td>${r.pieces_count}</td>
+         <td>${fmtShort(r.seconds_to_solve)}</td><td>${r.type || 'solo'}</td>
+         <td>${r.player_rank ? '#' + r.player_rank : '-'}</td></tr>`
+    ).join('') + (valid.length > 50 ? `<tr><td colspan="6" style="text-align:center;color:var(--text-3)">... and ${valid.length - 50} more</td></tr>` : '');
+
+    document.getElementById('import-zone').style.display = 'none';
+    document.getElementById('import-preview').style.display = 'block';
+    document.getElementById('import-confirm').dataset.kind = 'speedpuzzling';
+}
+
+document.getElementById('sp-include-teams').addEventListener('change', () => {
+    if (spImportData.length && document.getElementById('import-preview').style.display !== 'none') showSpPreview();
+});
+
+async function confirmSpImport() {
+    const includeTeams = document.getElementById('sp-include-teams').checked;
+    const btn = document.getElementById('import-confirm');
+    btn.disabled = true; btn.textContent = 'Importing...';
+    try {
+        const res = await fetch('/api/import/speedpuzzling', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ records: spImportData, include_types: includeTeams ? ['solo', 'duo', 'team'] : ['solo'] })
+        });
+        const r = await res.json();
+        btn.disabled = false; btn.textContent = 'Import All';
+        if (r.imported > 0) launchConfetti(2500);
+        const parts = [`Imported ${r.imported}`];
+        if (r.duplicates) parts.push(`${r.duplicates} already logged`);
+        if (r.skipped_type) parts.push(`${r.skipped_type} duo/team skipped`);
+        if (r.invalid) parts.push(`${r.invalid} invalid`);
+        toast('import-toast', parts.join(' · ') + (r.imported ? ` · +${r.imported * 50} XP` : ''), r.imported ? 'success' : 'error');
+        resetImport(); loadHistory();
+    } catch (err) {
+        btn.disabled = false; btn.textContent = 'Import All';
+        toast('import-toast', 'Import failed', 'error');
+    }
+}
 
 function parseTimeString(timeStr) {
     timeStr = timeStr.trim();
@@ -757,17 +891,23 @@ function showImportPreview(errors) {
 
     document.getElementById('import-zone').style.display = 'none';
     document.getElementById('import-preview').style.display = 'block';
+    document.getElementById('import-confirm').dataset.kind = 'csv';
 }
 
 document.getElementById('import-cancel').addEventListener('click', resetImport);
 function resetImport() {
-    importData = [];
+    importData = []; spImportData = [];
     document.getElementById('import-zone').style.display = 'block';
     document.getElementById('import-preview').style.display = 'none';
     document.getElementById('csv-file').value = '';
 }
 
-document.getElementById('import-confirm').addEventListener('click', async () => {
+document.getElementById('import-confirm').addEventListener('click', (e) => {
+    if (e.currentTarget.dataset.kind === 'speedpuzzling') return confirmSpImport();
+    return confirmCsvImport();
+});
+
+async function confirmCsvImport() {
     const valid = importData.filter(e => e.valid);
     if (!valid.length) return toast('import-toast', 'No valid entries to import', 'error');
 
@@ -791,7 +931,7 @@ document.getElementById('import-confirm').addEventListener('click', async () => 
     if (success > 0) launchConfetti(2000);
     toast('import-toast', `Imported ${success} puzzles${fail > 0 ? ` (${fail} failed)` : ''}! +${success * 50} XP`, success > 0 ? 'success' : 'error');
     resetImport(); loadHistory();
-});
+}
 
 // ============================================================
 // CHARTS
@@ -922,7 +1062,7 @@ async function loadAchievements() {
 // ============================================================
 async function loadSettings() {
     const res = await fetch('/api/settings'); const s = await res.json();
-    EXPONENT = parseFloat(s.scaling_exponent || 0.73);
+    EXPONENT = parseFloat(s.scaling_exponent || 0.4);
     document.getElementById('setting-exponent').value = EXPONENT;
     document.getElementById('exponent-display').textContent = EXPONENT.toFixed(2);
     updScalePreview(EXPONENT); updPresets(EXPONENT);
@@ -960,6 +1100,6 @@ document.getElementById('save-settings').addEventListener('click', async () => {
 // INIT
 // ============================================================
 (async () => {
-    try { const r = await fetch('/api/settings'); const s = await r.json(); EXPONENT = parseFloat(s.scaling_exponent||0.73); } catch(e){}
+    try { const r = await fetch('/api/settings'); const s = await r.json(); EXPONENT = parseFloat(s.scaling_exponent||0.4); } catch(e){}
     loadDashboard();
 })();

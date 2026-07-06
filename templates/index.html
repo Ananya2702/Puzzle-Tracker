@@ -133,6 +133,15 @@
                 <div class="chip"><span class="chip-val" id="stat-week">0</span><span class="chip-label">this week</span></div>
                 <div class="chip"><span class="chip-val" id="stat-pace-trend">--</span><span class="chip-label">trend</span></div>
                 <div class="chip"><span class="chip-val" id="stat-total-pieces">0</span><span class="chip-label">pieces</span></div>
+                <div class="chip"><span class="chip-val" id="stat-days">0</span><span class="chip-label">days active</span></div>
+                <div class="chip"><span class="chip-val" id="stat-biggest">0</span><span class="chip-label">biggest</span></div>
+                <div class="chip"><span class="chip-val" id="stat-brands">0</span><span class="chip-label">brands</span></div>
+            </div>
+
+            <!-- Community standing (from myspeedpuzzling) -->
+            <div class="card glass community-card" id="community-card" style="display:none">
+                <div class="card-head"><h3>Community Standing</h3><span class="tag">myspeedpuzzling</span></div>
+                <div class="community-grid" id="community-grid"></div>
             </div>
 
             <div class="grid-2">
@@ -291,29 +300,44 @@
             <div class="page-head">
                 <div><h1>History</h1><p class="page-desc">All sessions</p></div>
                 <div class="head-actions">
-                    <button class="btn btn-ghost btn-sm" id="toggle-import">Import CSV</button>
+                    <button class="btn btn-primary btn-sm" id="toggle-import">Import</button>
                     <select id="filter-pieces" class="sel-sm"><option value="">All</option><option value="100">100pc</option><option value="200">200pc</option><option value="300">300pc</option><option value="500">500pc</option><option value="750">750pc</option><option value="1000">1000pc</option><option value="1500">1500pc</option><option value="2000">2000pc</option></select>
                     <select id="sort-by" class="sel-sm"><option value="date">Date</option><option value="time">Time</option><option value="scaled">Scaled</option><option value="pieces">Pieces</option></select>
                     <a href="/api/export/csv" class="btn btn-ghost btn-sm">Export CSV</a>
                 </div>
             </div>
 
-            <!-- CSV Import Panel -->
+            <!-- Import Panel -->
             <div class="card glass import-panel" id="import-panel" style="display:none">
                 <div class="import-header">
-                    <h3>Bulk Import from CSV</h3>
+                    <h3>Import Puzzles</h3>
                     <button class="modal-x" id="close-import">&times;</button>
                 </div>
-                <p class="help">Upload a CSV file with your puzzle times. Expected columns:</p>
-                <div class="csv-format">
-                    <code>Date, Pieces, Time, Name (optional), Brand (optional), Difficulty (optional), Notes (optional), Tags (optional)</code>
-                    <p class="help" style="margin-top:8px; margin-bottom:0">Time format: <strong>h:mm:ss</strong>, <strong>mm:ss</strong>, or <strong>seconds</strong>. Date format: <strong>YYYY-MM-DD</strong></p>
+                <div class="import-tabs">
+                    <button type="button" class="import-tab active" data-mode="speedpuzzling">myspeedpuzzling</button>
+                    <button type="button" class="import-tab" data-mode="csv">CSV file</button>
                 </div>
+
+                <!-- myspeedpuzzling JSON -->
+                <div class="import-mode" id="mode-speedpuzzling">
+                    <p class="help">Import your history straight from a <strong>myspeedpuzzling</strong> JSON export. Anything you've already logged is detected and skipped automatically &mdash; safe to run any time you get a fresh export.</p>
+                    <label class="check-row"><input type="checkbox" id="sp-include-teams"> <span>Also import duo &amp; team sessions <small>(excluded from personal bests)</small></span></label>
+                </div>
+
+                <!-- CSV -->
+                <div class="import-mode" id="mode-csv" style="display:none">
+                    <p class="help">Upload a CSV file with your puzzle times. Expected columns:</p>
+                    <div class="csv-format">
+                        <code>Date, Pieces, Time, Name (optional), Brand (optional), Difficulty (optional), Notes (optional), Tags (optional)</code>
+                        <p class="help" style="margin-top:8px; margin-bottom:0">Time format: <strong>h:mm:ss</strong>, <strong>mm:ss</strong>, or <strong>seconds</strong>. Date format: <strong>YYYY-MM-DD</strong></p>
+                    </div>
+                </div>
+
                 <div class="import-zone" id="import-zone">
-                    <input type="file" id="csv-file" accept=".csv" style="display:none">
+                    <input type="file" id="csv-file" accept=".csv,.json" style="display:none">
                     <div class="drop-area" id="drop-area">
                         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
-                        <p>Drop CSV file here or <a href="#" id="browse-file">browse</a></p>
+                        <p>Drop your file here or <a href="#" id="browse-file">browse</a> <small class="drop-hint" id="drop-hint">(.json export)</small></p>
                     </div>
                 </div>
                 <div id="import-preview" style="display:none">
@@ -384,17 +408,18 @@
             <div class="page-head"><div><h1>Settings</h1><p class="page-desc">Customize your experience</p></div></div>
             <div class="card glass form-card">
                 <div class="settings-block">
-                    <h3>Scaling Exponent</h3>
-                    <p class="help">Controls how times are normalized to 500-piece equivalent. Higher = larger puzzles considered harder.</p>
+                    <h3>Scaling Strength</h3>
+                    <p class="help">Controls how times are normalized to a 500-piece equivalent. <strong>0 = no scaling</strong> (compare raw times); higher values give bigger puzzles more credit. If big puzzles feel over-rewarded, drag it lower &mdash; use the live table below to dial it to your taste.</p>
                     <div class="slider-row">
-                        <input type="range" id="setting-exponent" min="0.5" max="1.0" step="0.01" value="0.73">
-                        <span class="slider-val" id="exponent-display">0.73</span>
+                        <input type="range" id="setting-exponent" min="0" max="1.0" step="0.01" value="0.4">
+                        <span class="slider-val" id="exponent-display">0.40</span>
                     </div>
                     <div class="presets">
-                        <button type="button" class="preset" data-val="0.60">0.60</button>
-                        <button type="button" class="preset active" data-val="0.73">0.73</button>
-                        <button type="button" class="preset" data-val="0.80">0.80</button>
-                        <button type="button" class="preset" data-val="0.90">0.90</button>
+                        <button type="button" class="preset" data-val="0.00">Off</button>
+                        <button type="button" class="preset" data-val="0.25">0.25</button>
+                        <button type="button" class="preset active" data-val="0.40">0.40</button>
+                        <button type="button" class="preset" data-val="0.55">0.55</button>
+                        <button type="button" class="preset" data-val="0.73">0.73</button>
                     </div>
                     <div class="scale-table" id="scaling-preview"></div>
                 </div>

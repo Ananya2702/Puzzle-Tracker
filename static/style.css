@@ -970,3 +970,58 @@ tr.is-pb td:first-child { box-shadow: inset 3px 0 0 var(--green); }
     border: 1px solid rgba(251,191,36,0.3);
     font-weight: 600;
 }
+
+/* ========== IMPORT TABS ========== */
+.import-tabs {
+    display: flex; gap: 6px; margin: 4px 0 16px;
+    background: var(--surface); padding: 4px; border-radius: var(--radius-sm);
+    width: fit-content;
+}
+.import-tab {
+    border: none; background: transparent; color: var(--text-2);
+    font-family: var(--font); font-size: 0.82rem; font-weight: 600;
+    padding: 7px 16px; border-radius: var(--radius-xs); cursor: pointer;
+    transition: all 0.2s var(--ease);
+}
+.import-tab:hover { color: var(--text); }
+.import-tab.active { background: var(--purple); color: #fff; box-shadow: 0 3px 12px var(--purple-glow); }
+
+.check-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px; margin-top: 12px;
+    background: var(--surface); border-radius: var(--radius-xs);
+    font-size: 0.85rem; cursor: pointer; user-select: none;
+}
+.check-row input { width: 16px; height: 16px; accent-color: var(--purple); cursor: pointer; }
+.check-row small { color: var(--text-3); }
+.drop-hint { color: var(--text-3); }
+
+/* ========== COMMUNITY STANDING ========== */
+.community-card { margin-bottom: 22px; animation: fadeUp 0.5s var(--ease) both; }
+.community-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 12px;
+}
+.community-stat {
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+    gap: 3px; padding: 16px 10px;
+    background: linear-gradient(160deg, var(--purple-soft), transparent);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    transition: transform 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+.community-stat:hover { transform: translateY(-3px); border-color: var(--purple); }
+.community-icon { font-size: 1.7rem; line-height: 1; }
+.community-val { font-size: 1.5rem; font-weight: 800; color: var(--text); letter-spacing: -0.02em; }
+.community-label { font-size: 0.72rem; color: var(--text-3); font-weight: 500; }
+
+/* ========== POLISH: gradient headings + KPI lift ========== */
+.page-head h1 {
+    background: linear-gradient(120deg, var(--text), var(--purple));
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.kpi { transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease); }
+.kpi:hover { transform: translateY(-3px); }
+.chip { transition: transform 0.15s var(--ease), border-color 0.15s var(--ease); }
+.chip:hover { transform: translateY(-1px); border-color: var(--purple); }
