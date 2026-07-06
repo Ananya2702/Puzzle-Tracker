@@ -1,0 +1,58 @@
+import { describe, it, expect } from 'vitest';
+import { makeTestDb } from '@/db/test-db';
+import {
+  createUser, verifyCredentials, findOrCreateGoogleUser, setTheme, registerSchema,
+} from '@/lib/users';
+
+describe('registerSchema', () => {
+  it('accepts valid input', () => {
+    expect(
+      registerSchema.safeParse({ username: 'maya_1', email: 'm@x.com', password: 'longenough' }).success,
+    ).toBe(true);
+  });
+  it('rejects short username, bad email, short password', () => {
+    expect(registerSchema.safeParse({ username: 'ab', email: 'm@x.com', password: 'longenough' }).success).toBe(false);
+    expect(registerSchema.safeParse({ username: 'maya', email: 'nope', password: 'longenough' }).success).toBe(false);
+    expect(registerSchema.safeParse({ username: 'maya', email: 'm@x.com', password: 'short' }).success).toBe(false);
+  });
+});
+
+describe('user services', () => {
+  it('creates a user and verifies credentials by username or email', async () => {
+    const db = await makeTestDb();
+    const u = await createUser(db, { username: 'maya', email: 'maya@x.com', password: 'longenough' });
+    expect(u.username).toBe('maya');
+    expect(await verifyCredentials(db, 'maya', 'longenough')).toMatchObject({ id: u.id });
+    expect(await verifyCredentials(db, 'maya@x.com', 'longenough')).toMatchObject({ id: u.id });
+    expect(await verifyCredentials(db, 'maya', 'wrongpass')).toBeNull();
+    expect(await verifyCredentials(db, 'ghost', 'longenough')).toBeNull();
+  });
+
+  it('throws typed errors on duplicates', async () => {
+    const db = await makeTestDb();
+    await createUser(db, { username: 'sam', email: 'sam@x.com', password: 'longenough' });
+    await expect(createUser(db, { username: 'sam', email: 'other@x.com', password: 'longenough' }))
+      .rejects.toThrow('USERNAME_TAKEN');
+    await expect(createUser(db, { username: 'other', email: 'sam@x.com', password: 'longenough' }))
+      .rejects.toThrow('EMAIL_TAKEN');
+  });
+
+  it('findOrCreateGoogleUser links existing email, creates new otherwise, and is idempotent', async () => {
+    const db = await makeTestDb();
+    const existing = await createUser(db, { username: 'kai', email: 'kai@x.com', password: 'longenough' });
+    const linked = await findOrCreateGoogleUser(db, { email: 'kai@x.com', name: 'Kai', providerAccountId: 'g-1' });
+    expect(linked.id).toBe(existing.id);
+
+    const fresh = await findOrCreateGoogleUser(db, { email: 'new@x.com', name: 'New Person', providerAccountId: 'g-2' });
+    expect(fresh.username.length).toBeGreaterThanOrEqual(3);
+    const again = await findOrCreateGoogleUser(db, { email: 'new@x.com', name: 'New Person', providerAccountId: 'g-2' });
+    expect(again.id).toBe(fresh.id);
+  });
+
+  it('setTheme persists', async () => {
+    const db = await makeTestDb();
+    const u = await createUser(db, { username: 'zoe', email: 'z@x.com', password: 'longenough' });
+    await setTheme(db, u.id, 'cozy');
+    expect((await verifyCredentials(db, 'zoe', 'longenough'))?.theme).toBe('cozy');
+  });
+});
