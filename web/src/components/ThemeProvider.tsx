@@ -12,9 +12,17 @@ const ThemeContext = createContext<{ theme: Theme; setTheme: (t: Theme) => void 
 export function ThemeProvider({ initialTheme, children }: { initialTheme: Theme; children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(initialTheme);
 
+  // On mount, adopt the stored preference (the <head> boot script already
+  // painted it); otherwise make the DOM reflect the server-derived theme.
   useEffect(() => {
     const stored = localStorage.getItem('pg-theme');
-    if (stored === 'midnight' || stored === 'cozy') setThemeState(stored);
+    if (stored === 'midnight' || stored === 'cozy') {
+      setThemeState(stored);
+      document.documentElement.dataset.theme = stored;
+    } else {
+      document.documentElement.dataset.theme = initialTheme;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function setTheme(t: Theme) {
@@ -28,10 +36,6 @@ export function ThemeProvider({ initialTheme, children }: { initialTheme: Theme;
       body: JSON.stringify({ theme: t }),
     }).catch(() => {});
   }
-
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-  }, [theme]);
 
   return <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>;
 }
