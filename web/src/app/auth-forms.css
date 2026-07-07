@@ -20,3 +20,9 @@
 .auth-submit:disabled { opacity: 0.6; cursor: wait; }
 .auth-alt { margin-top: 16px; text-align: center; font-size: 0.85rem; color: var(--text-muted); }
 .auth-alt a { color: var(--accent); }
+.auth-google {
+  width: 100%; margin-top: 12px; padding: 11px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--bg); color: var(--text);
+  font: inherit; font-weight: 600; cursor: pointer;
+}
+.auth-google:hover { border-color: var(--accent); }

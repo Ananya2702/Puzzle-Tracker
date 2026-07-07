@@ -8,7 +8,7 @@ export type PublicUser = { id: number; username: string; email: string; theme: s
 
 export const registerSchema = z.object({
   username: z.string().regex(/^[a-zA-Z0-9_]{3,30}$/, 'Username: 3-30 letters, numbers, underscores'),
-  email: z.string().email(),
+  email: z.string().email().transform((v) => v.toLowerCase()),
   password: z.string().min(8).max(200),
 });
 
@@ -28,14 +28,15 @@ export function uniqueViolation(e: unknown): string | null {
 }
 
 export async function createUser(db: Db, input: z.infer<typeof registerSchema>): Promise<PublicUser> {
+  const email = input.email.toLowerCase();
   const [byName] = await db.select().from(users).where(eq(users.username, input.username));
   if (byName) throw new Error('USERNAME_TAKEN');
-  const [byEmail] = await db.select().from(users).where(eq(users.email, input.email));
+  const [byEmail] = await db.select().from(users).where(eq(users.email, email));
   if (byEmail) throw new Error('EMAIL_TAKEN');
   try {
     const [row] = await db
       .insert(users)
-      .values({ username: input.username, email: input.email, passwordHash: await hashPassword(input.password) })
+      .values({ username: input.username, email, passwordHash: await hashPassword(input.password) })
       .returning();
     return toPublic(row);
   } catch (e) {
@@ -52,7 +53,7 @@ export async function verifyCredentials(db: Db, identifier: string, password: st
   const [row] = await db
     .select()
     .from(users)
-    .where(or(eq(users.username, identifier), eq(users.email, identifier)));
+    .where(or(eq(users.username, identifier), eq(users.email, identifier.toLowerCase())));
   if (!row?.passwordHash) return null;
   return (await verifyPassword(password, row.passwordHash)) ? toPublic(row) : null;
 }
@@ -61,17 +62,18 @@ export async function findOrCreateGoogleUser(
   db: Db,
   input: { email: string; name: string; providerAccountId: string },
 ): Promise<PublicUser> {
-  const [existing] = await db.select().from(users).where(eq(users.email, input.email));
+  const email = input.email.toLowerCase();
+  const [existing] = await db.select().from(users).where(eq(users.email, email));
   let user = existing;
   if (!user) {
     try {
       [user] = await db
         .insert(users)
-        .values({ username: await availableUsername(db, input.email), email: input.email, passwordHash: null })
+        .values({ username: await availableUsername(db, email), email, passwordHash: null })
         .returning();
     } catch (e) {
       if (!uniqueViolation(e)) throw e;
-      const [reselected] = await db.select().from(users).where(eq(users.email, input.email));
+      const [reselected] = await db.select().from(users).where(eq(users.email, email));
       if (!reselected) throw e;
       user = reselected;
     }

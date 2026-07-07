@@ -3,7 +3,7 @@ import { isProtectedPath } from '@/auth.config';
 
 describe('isProtectedPath', () => {
   it('protects app pages and their subpaths', () => {
-    for (const p of ['/dashboard', '/timer', '/log', '/history', '/analytics', '/goals', '/awards', '/settings', '/settings/profile', '/log?quick=1'.split('?')[0]]) {
+    for (const p of ['/dashboard', '/timer', '/log', '/history', '/analytics', '/goals', '/awards', '/settings', '/settings/profile']) {
       expect(isProtectedPath(p)).toBe(true);
     }
   });

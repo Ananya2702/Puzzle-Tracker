@@ -62,6 +62,22 @@ describe('user services', () => {
     expect(await verifyCredentials(db, 'oauth@x.com', 'anything')).toBeNull();
     expect(await verifyCredentials(db, u.username, 'anything')).toBeNull();
   });
+
+  it('normalizes email case at registration and login', async () => {
+    const db = await makeTestDb();
+    const u = await createUser(db, { username: 'cased', email: 'Cased@X.com', password: 'longenough' });
+    expect(u.email).toBe('cased@x.com');
+    expect(await verifyCredentials(db, 'CASED@x.COM', 'longenough')).toMatchObject({ id: u.id });
+    await expect(createUser(db, { username: 'other', email: 'cased@X.COM', password: 'longenough' }))
+      .rejects.toThrow('EMAIL_TAKEN');
+  });
+
+  it('links Google sign-in case-insensitively to an existing email', async () => {
+    const db = await makeTestDb();
+    const u = await createUser(db, { username: 'gcase', email: 'gcase@x.com', password: 'longenough' });
+    const linked = await findOrCreateGoogleUser(db, { email: 'GCase@X.com', name: 'G', providerAccountId: 'g-77' });
+    expect(linked.id).toBe(u.id);
+  });
 });
 
 describe('uniqueViolation', () => {
