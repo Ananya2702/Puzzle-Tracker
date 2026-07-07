@@ -1,0 +1,53 @@
+/* ---------- Theme tokens ---------- */
+:root,
+[data-theme='midnight'] {
+  --bg: #0b0e14;
+  --bg-raised: #11151d;
+  --border: #1f2630;
+  --text: #e6edf3;
+  --text-muted: #8b949e;
+  --accent: #7ee787;
+  --accent-2: #79c0ff;
+  --accent-contrast: #0b0e14;
+  --danger: #ff7b72;
+  --font-body: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: var(--font-body);
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', monospace;
+  --radius: 12px;
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
+  color-scheme: dark;
+}
+
+[data-theme='cozy'] {
+  --bg: #f6efe4;
+  --bg-raised: #fffdf8;
+  --border: #e8dcc8;
+  --text: #4a3f33;
+  --text-muted: #a08d75;
+  --accent: #b5651d;
+  --accent-2: #5c8a58;
+  --accent-contrast: #fffdf8;
+  --danger: #c0392b;
+  --font-body: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: Georgia, 'Times New Roman', serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', monospace;
+  --radius: 14px;
+  --shadow: 0 2px 10px rgba(120, 90, 50, 0.15);
+  color-scheme: light;
+}
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  line-height: 1.5;
+  transition: background 0.25s ease, color 0.25s ease;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.2; }
+button { font: inherit; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }

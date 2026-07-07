@@ -1,0 +1,22 @@
+.landing { min-height: 100vh; display: flex; flex-direction: column; }
+.landing-nav { display: flex; justify-content: space-between; align-items: center; padding: 20px 32px; }
+.landing-nav .logo { font-family: var(--font-display); font-weight: 800; color: var(--accent); font-size: 1.15rem; }
+.landing-nav .actions { display: flex; gap: 12px; align-items: center; }
+.hero { flex: 1; display: grid; place-items: center; text-align: center; padding: 48px 24px; }
+.hero h1 { font-size: clamp(2.2rem, 6vw, 3.6rem); max-width: 16ch; margin: 0 auto 16px; }
+.hero .tagline { color: var(--text-muted); font-size: 1.1rem; max-width: 44ch; margin: 0 auto 32px; }
+.hero .demo-timer {
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+  font-size: clamp(2rem, 8vw, 4rem); font-weight: 800; color: var(--accent);
+  letter-spacing: 0.06em; margin-bottom: 32px;
+}
+.btn-primary {
+  display: inline-block; padding: 13px 28px; border-radius: 10px; border: none;
+  background: var(--accent); color: var(--accent-contrast); font-weight: 700; font-size: 1rem; cursor: pointer;
+}
+.btn-primary:hover { text-decoration: none; filter: brightness(1.1); }
+.btn-ghost { color: var(--text); padding: 10px 16px; }
+.features { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; padding: 0 32px 64px; max-width: 1000px; margin: 0 auto; width: 100%; }
+.feature h3 { margin-bottom: 6px; font-size: 1.05rem; }
+.feature p { color: var(--text-muted); font-size: 0.9rem; }
+.features .feature { background: var(--bg-raised); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
