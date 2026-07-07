@@ -52,21 +52,23 @@ export function RegisterForm({ googleSlot }: { googleSlot?: ReactNode }) {
 
   return (
     <main className="auth-wrap">
-      <form className="auth-card" onSubmit={onSubmit}>
-        <h1>Join Puzzle Geeks</h1>
-        <p className="sub">Track solves. Beat your times.</p>
-        <label htmlFor="username">Username</label>
-        <input id="username" name="username" required pattern="[a-zA-Z0-9_]{3,30}"
-          title="3-30 letters, numbers, underscores" autoComplete="username" />
-        <label htmlFor="email">Email</label>
-        <input id="email" name="email" type="email" required autoComplete="email" />
-        <label htmlFor="password">Password (8+ characters)</label>
-        <input id="password" name="password" type="password" required minLength={8} autoComplete="new-password" />
-        <p className="auth-error" role="alert">{error}</p>
-        <button className="auth-submit" disabled={busy}>{busy ? 'Creating…' : 'Create account'}</button>
+      <div className="auth-card">
+        <form onSubmit={onSubmit}>
+          <h1>Join Puzzle Geeks</h1>
+          <p className="sub">Track solves. Beat your times.</p>
+          <label htmlFor="username">Username</label>
+          <input id="username" name="username" required pattern="[a-zA-Z0-9_]{3,30}"
+            title="3-30 letters, numbers, underscores" autoComplete="username" />
+          <label htmlFor="email">Email</label>
+          <input id="email" name="email" type="email" required autoComplete="email" />
+          <label htmlFor="password">Password (8+ characters)</label>
+          <input id="password" name="password" type="password" required minLength={8} autoComplete="new-password" />
+          <p className="auth-error" role="alert">{error}</p>
+          <button className="auth-submit" disabled={busy}>{busy ? 'Creating…' : 'Create account'}</button>
+        </form>
         {googleSlot}
         <p className="auth-alt">Have an account? <Link href="/login">Sign in</Link></p>
-      </form>
+      </div>
     </main>
   );
 }

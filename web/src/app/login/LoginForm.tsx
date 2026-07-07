@@ -34,18 +34,20 @@ export function LoginForm({ googleSlot }: { googleSlot?: ReactNode }) {
 
   return (
     <main className="auth-wrap">
-      <form className="auth-card" onSubmit={onSubmit}>
-        <h1>Welcome back</h1>
-        <p className="sub">Sign in to Puzzle Geeks</p>
-        <label htmlFor="identifier">Username or email</label>
-        <input id="identifier" name="identifier" required autoComplete="username" />
-        <label htmlFor="password">Password</label>
-        <input id="password" name="password" type="password" required autoComplete="current-password" />
-        <p className="auth-error" role="alert">{error}</p>
-        <button className="auth-submit" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
+      <div className="auth-card">
+        <form onSubmit={onSubmit}>
+          <h1>Welcome back</h1>
+          <p className="sub">Sign in to Puzzle Geeks</p>
+          <label htmlFor="identifier">Username or email</label>
+          <input id="identifier" name="identifier" required autoComplete="username" />
+          <label htmlFor="password">Password</label>
+          <input id="password" name="password" type="password" required autoComplete="current-password" />
+          <p className="auth-error" role="alert">{error}</p>
+          <button className="auth-submit" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
+        </form>
         {googleSlot}
         <p className="auth-alt">New here? <Link href="/register">Create an account</Link></p>
-      </form>
+      </div>
     </main>
   );
 }
