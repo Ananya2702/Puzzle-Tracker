@@ -5,3 +5,4 @@ __pycache__/
 puzzles.db
 *.db
 .DS_Store
+.superpowers/

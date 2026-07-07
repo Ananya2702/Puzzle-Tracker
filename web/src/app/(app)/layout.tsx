@@ -1,0 +1,14 @@
+import { redirect } from 'next/navigation';
+import { auth } from '@/auth';
+import { Sidebar } from '@/components/Sidebar';
+
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth();
+  if (!session?.user) redirect('/login'); // belt-and-braces beside middleware
+  return (
+    <div className="shell">
+      <Sidebar username={session.user.username} />
+      <main className="shell-main">{children}</main>
+    </div>
+  );
+}
