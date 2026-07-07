@@ -1,4 +1,4 @@
-/** Only allow same-origin relative paths for post-login redirects. */
+/** Only allow same-origin relative paths for post-login redirects. Rejects paths starting with //, /, or \ */
 export function safeCallbackPath(raw: string | null): string {
-  return raw && raw.startsWith('/') && !raw.startsWith('//') ? raw : '/dashboard';
+  return raw && /^\/(?![/\\])/.test(raw) ? raw : '/dashboard';
 }

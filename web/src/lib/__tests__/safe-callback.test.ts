@@ -9,6 +9,7 @@ describe('safeCallbackPath', () => {
   it('rejects absolute/protocol-relative/empty', () => {
     expect(safeCallbackPath('https://evil.example')).toBe('/dashboard');
     expect(safeCallbackPath('//evil.example')).toBe('/dashboard');
+    expect(safeCallbackPath('/\\evil.com')).toBe('/dashboard');
     expect(safeCallbackPath('')).toBe('/dashboard');
     expect(safeCallbackPath(null)).toBe('/dashboard');
   });
