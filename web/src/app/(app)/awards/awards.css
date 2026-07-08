@@ -1,0 +1,9 @@
+.awards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
+.award { position: relative; padding: 16px; }
+.award .icon { font-size: 1.8rem; margin-bottom: 6px; }
+.award h4 { font-size: 0.95rem; margin-bottom: 2px; }
+.award p { font-size: 0.8rem; color: var(--text-muted); }
+.award .date { font-size: 0.75rem; color: var(--accent); margin-top: 6px; }
+.award.unlocked { border-color: var(--accent); }
+.award.locked { opacity: 0.55; }
+.award.locked::after { content: '🔒'; position: absolute; top: 12px; right: 12px; }
