@@ -51,3 +51,23 @@ a:hover { text-decoration: underline; }
 h1, h2, h3 { font-family: var(--font-display); line-height: 1.2; }
 button { font: inherit; }
 .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* ---------- Chart tokens (validated: dataviz six-checks, per theme surface) ---------- */
+:root,
+[data-theme='midnight'] {
+  --chart-1: #2ea043; /* fixed slot order — never cycle or reassign per chart */
+  --chart-2: #4184e4;
+  --chart-3: #d47616;
+  --chart-4: #986ee2;
+  --chart-5: #ab8a12;
+  --chart-grid: var(--border);
+}
+
+[data-theme='cozy'] {
+  --chart-1: #1a7f37;
+  --chart-2: #2a6fd6;
+  --chart-3: #b35900;
+  --chart-4: #7d4ec2;
+  --chart-5: #8a6d00;
+  --chart-grid: var(--border);
+}
