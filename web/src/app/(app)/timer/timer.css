@@ -1,0 +1,23 @@
+.cockpit { max-width: 720px; margin: 0 auto; }
+.clock {
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+  font-size: clamp(3rem, 14vw, 6rem); font-weight: 800; letter-spacing: 0.04em;
+  text-align: center; margin: 12px 0 4px; color: var(--text);
+}
+.clock-sub { text-align: center; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px; min-height: 1.2em; }
+.phase-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 20px; }
+.phase-chip {
+  padding: 8px 14px; border-radius: 10px; border: 1px solid var(--border);
+  background: var(--bg-raised); font-size: 0.85rem; color: var(--text-muted); text-align: center;
+}
+.phase-chip.done { color: var(--text); }
+.phase-chip.current { border-color: var(--accent); color: var(--accent); }
+.phase-chip .t { display: block; font-family: var(--font-mono); font-size: 0.95rem; }
+.delta-ahead { color: var(--accent); }
+.delta-behind { color: var(--danger); }
+.cockpit-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 24px; }
+.cockpit-stats .cell { background: var(--bg-raised); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; text-align: center; }
+.cockpit-stats .cell .v { font-family: var(--font-mono); font-size: 1.15rem; font-weight: 700; }
+.cockpit-stats .cell .l { color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.cockpit-controls { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.btn-big { padding: 16px 32px; font-size: 1.05rem; border-radius: 12px; }

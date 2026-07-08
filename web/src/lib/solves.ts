@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { and, asc, desc, eq } from 'drizzle-orm';
 import type { Db } from '@/db';
-import { solves, goals } from '@/db/schema';
+import { solves, goals, splits as splitsTable } from '@/db/schema';
 import { calculateScaledTime } from './scaling';
 import { getScalingExponent } from './settings-service';
 
@@ -18,6 +18,11 @@ export const solveInputSchema = z.object({
   tags: z.string().max(1000).default(''),
   puzzle_type: z.enum(['solo', 'duo', 'team']).default('solo'),
   first_attempt: z.boolean().default(false),
+  splits: z.array(z.object({
+    phase: z.string().min(1).max(40),
+    seconds: z.number().int().positive(),
+    position: z.number().int().min(0),
+  })).max(20).optional(),
 });
 export type SolveInput = z.infer<typeof solveInputSchema>;
 
@@ -82,6 +87,13 @@ export async function addSolve(
       firstAttempt: input.first_attempt,
     })
     .returning();
+
+  if (input.splits?.length) {
+    await db.insert(splitsTable).values(
+      input.splits.map((sp) => ({ solveId: inserted.id, phase: sp.phase, seconds: sp.seconds, position: sp.position })),
+    );
+  }
+
   await updatePersonalBests(db, userId);
 
   const openGoals = await db

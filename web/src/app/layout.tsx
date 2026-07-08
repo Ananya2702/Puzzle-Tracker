@@ -1,11 +1,19 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { auth } from '@/auth';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister';
 import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Puzzle Geeks',
   description: 'Track your speed puzzling. Beat your times.',
+  manifest: '/manifest.webmanifest',
+  appleWebApp: { capable: true, title: 'Puzzle Geeks', statusBarStyle: 'black-translucent' },
+  icons: { apple: '/icons/apple-touch-icon.png' },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#0b0e14',
 };
 
 // Runs before paint: theme from localStorage (visitor) falls back to midnight.
@@ -25,6 +33,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body>
+        <ServiceWorkerRegister />
         <ThemeProvider initialTheme={serverTheme}>{children}</ThemeProvider>
       </body>
     </html>

@@ -3,7 +3,7 @@ import { makeTestDb } from '@/db/test-db';
 import { createUser } from '@/lib/users';
 import { putSettings } from '@/lib/settings-service';
 import { addSolve, listSolves, listSolvesChrono, updateSolve, deleteSolve, csvRows, solveInputSchema } from '@/lib/solves';
-import { goals } from '@/db/schema';
+import { goals, splits as splitsTable } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
 const TODAY = '2026-07-07';
@@ -122,5 +122,29 @@ describe('csvRows', () => {
     const rows = csvRows([solve]);
     expect(rows[0]).toEqual(['Date', 'Puzzle Name', 'Brand', 'Pieces', 'Time (seconds)', 'Time (formatted)', 'Scaled Time (500pc)', 'Difficulty', 'Notes', 'Tags']);
     expect(rows[1]).toEqual(['2026-07-01', 'Magic Garden', 'Ravensburger', '500', '3000', '0:50:00', '3000', '4', 'fun', 'floral']);
+  });
+});
+
+describe('splits in addSolve', () => {
+  it('persists provided splits against the new solve', async () => {
+    const { db, uid } = await seed();
+    const { solve } = await addSolve(db, uid, {
+      pieces: 500, time_seconds: 400,
+      splits: [
+        { phase: 'edge', seconds: 60, position: 0 },
+        { phase: 'sort', seconds: 90, position: 1 },
+        { phase: 'assembly', seconds: 250, position: 2 },
+      ],
+    }, TODAY);
+    const rows = await db.select().from(splitsTable).where(eq(splitsTable.solveId, solve.id));
+    expect(rows).toHaveLength(3);
+    expect(rows.map((r) => r.phase).sort()).toEqual(['assembly', 'edge', 'sort']);
+  });
+
+  it('rejects malformed splits', async () => {
+    const { db, uid } = await seed();
+    await expect(addSolve(db, uid, {
+      pieces: 500, time_seconds: 400, splits: [{ phase: '', seconds: 0, position: 0 }],
+    }, TODAY)).rejects.toThrow();
   });
 });
