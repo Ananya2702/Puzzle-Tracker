@@ -17,7 +17,7 @@ const todayLocal = () => {
 export function SolveForm({ initial, submitLabel, onSubmit, busy }: {
   initial?: Partial<SolveFormValues>;
   submitLabel: string;
-  onSubmit: (values: SolveFormValues) => Promise<void> | void;
+  onSubmit: (values: SolveFormValues) => Promise<boolean | void> | boolean | void;
   busy?: boolean;
 }) {
   const [timeText, setTimeText] = useState(initial?.time_seconds ? formatDuration(initial.time_seconds) : '');

@@ -6,7 +6,7 @@ import { parseDuration } from '@/lib/time';
 const PIECE_PRESETS = [100, 300, 500, 750, 1000, 1500, 2000];
 
 export function QuickAdd({ onLog, busy }: {
-  onLog: (values: { pieces: number; time_seconds: number }) => Promise<void> | void;
+  onLog: (values: { pieces: number; time_seconds: number }) => Promise<boolean | void> | boolean | void;
   busy?: boolean;
 }) {
   const [pieces, setPieces] = useState(500);
@@ -18,8 +18,8 @@ export function QuickAdd({ onLog, busy }: {
     setError('');
     const time = parseDuration(timeText);
     if (time == null || time <= 0) return setError('Time must look like 1:42:07, 42:07, or minutes.');
-    await onLog({ pieces, time_seconds: time });
-    setTimeText('');
+    const ok = await onLog({ pieces, time_seconds: time });
+    if (ok !== false) setTimeText('');
   }
 
   return (

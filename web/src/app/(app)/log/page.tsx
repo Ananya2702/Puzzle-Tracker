@@ -19,7 +19,7 @@ export default function LogPage() {
   const [mode, setMode] = useState<'quick' | 'full'>('quick');
   const [busy, setBusy] = useState(false);
 
-  async function log(values: Partial<SolveFormValues> & { pieces: number; time_seconds: number }) {
+  async function log(values: Partial<SolveFormValues> & { pieces: number; time_seconds: number }): Promise<boolean> {
     setBusy(true);
     try {
       const res = await postJSON<LogResponse>('/api/solves', values);
@@ -27,8 +27,10 @@ export default function LogPage() {
       if (res.isPersonalBest) toast('New personal best! 🎉');
       if (res.newAchievements.length > 0) toast(`Achievement unlocked: ${res.newAchievements.length}`);
       if (res.isPersonalBest || res.newAchievements.length > 0) fireConfetti();
+      return true;
     } catch (e) {
       toast(e instanceof ApiError ? e.message : 'Failed to log solve', 'error');
+      return false;
     } finally {
       setBusy(false);
     }
