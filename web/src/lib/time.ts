@@ -1,3 +1,9 @@
+/** The user's local calendar date as YYYY-MM-DD (client-side "today"). */
+export function todayLocal(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 /** 6127 -> "1:42:07"; 754 -> "12:34"; 59 -> "0:59" */
 export function formatDuration(totalSeconds: number): string {
   const s = Math.max(0, Math.floor(totalSeconds));

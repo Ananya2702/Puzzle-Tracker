@@ -1,0 +1,15 @@
+.history-controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+.history-controls select {
+  padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--bg-raised); color: var(--text); font: inherit;
+}
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 60; background: rgba(0, 0, 0, 0.5);
+  display: grid; place-items: center; padding: 20px;
+}
+.modal-card { width: 100%; max-width: 640px; max-height: 90vh; overflow-y: auto; }
+.drop-area {
+  border: 2px dashed var(--border); border-radius: var(--radius); padding: 28px;
+  text-align: center; color: var(--text-muted); cursor: pointer;
+}
+.drop-area.dragover { border-color: var(--accent); color: var(--accent); }

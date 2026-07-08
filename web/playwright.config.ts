@@ -9,6 +9,11 @@ const dbUrl = process.env.E2E_DATABASE_URL ?? 'postgres://postgres:pg@localhost:
 
 export default defineConfig({
   testDir: './e2e',
+  // Single worker: the dev server (Turbopack) JIT-compiles each route on first
+  // hit, and two workers hitting distinct cold routes concurrently can push
+  // navigation past the default expect timeout.
+  workers: 1,
+  expect: { timeout: 10000 },
   use: { baseURL: 'http://localhost:3100' },
   webServer: {
     command: 'npm run dev -- --port 3100',

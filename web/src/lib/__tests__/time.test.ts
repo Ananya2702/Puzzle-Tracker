@@ -1,5 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { formatDuration, parseDuration } from '@/lib/time';
+import { formatDuration, parseDuration, todayLocal } from '@/lib/time';
+
+describe('todayLocal', () => {
+  it('returns YYYY-MM-DD matching the local date components', () => {
+    const result = todayLocal();
+    expect(result).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    const now = new Date();
+    const expected = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    expect(result).toBe(expected);
+  });
+});
 
 describe('formatDuration', () => {
   it('formats hours, minutes, seconds', () => {
