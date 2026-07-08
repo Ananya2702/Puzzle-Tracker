@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { parseDuration } from '@/lib/time';
+import { parseDuration, todayLocal } from '@/lib/time';
 
 const PIECE_PRESETS = [100, 300, 500, 750, 1000, 1500, 2000];
 
 export function QuickAdd({ onLog, busy }: {
-  onLog: (values: { pieces: number; time_seconds: number }) => Promise<boolean | void> | boolean | void;
+  onLog: (values: { pieces: number; time_seconds: number; date: string }) => Promise<boolean | void> | boolean | void;
   busy?: boolean;
 }) {
   const [pieces, setPieces] = useState(500);
@@ -18,7 +18,7 @@ export function QuickAdd({ onLog, busy }: {
     setError('');
     const time = parseDuration(timeText);
     if (time == null || time <= 0) return setError('Time must look like 1:42:07, 42:07, or minutes.');
-    const ok = await onLog({ pieces, time_seconds: time });
+    const ok = await onLog({ pieces, time_seconds: time, date: todayLocal() });
     if (ok !== false) setTimeText('');
   }
 

@@ -1,18 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { parseDuration, formatDuration } from '@/lib/time';
+import { parseDuration, formatDuration, todayLocal } from '@/lib/time';
 
 export interface SolveFormValues {
   pieces: number; time_seconds: number; date: string; puzzle_name: string; brand: string;
   difficulty_rating: number; notes: string; tags: string;
   puzzle_type: 'solo' | 'duo' | 'team'; first_attempt: boolean;
 }
-
-const todayLocal = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-};
 
 export function SolveForm({ initial, submitLabel, onSubmit, busy }: {
   initial?: Partial<SolveFormValues>;

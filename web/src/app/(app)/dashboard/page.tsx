@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { getJSON } from '@/lib/api-client';
@@ -21,6 +21,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<Statistics | null>(null);
   const [trend, setTrend] = useState<Trend | null>(null);
   const [recent, setRecent] = useState<Solve[]>([]);
+  const motivation = useMemo(() => (stats ? getMotivation(stats) : null), [stats]);
 
   useEffect(() => {
     void getJSON<Statistics>('/api/statistics').then(setStats);
@@ -45,7 +46,6 @@ export default function DashboardPage() {
   }
 
   const level = calculateLevel(stats);
-  const motivation = getMotivation(stats);
   const fun = funStatItems(stats);
   const trendRows = trend?.solves.map((s, i) => ({
     name: fmtDate(s.date),
@@ -57,7 +57,7 @@ export default function DashboardPage() {
     <>
       <div className="page-head"><h1>Dashboard</h1><p className="desc">Your speed puzzling overview</p></div>
 
-      <div className="motivation"><span className="emoji" aria-hidden>{motivation.emoji}</span><span>{motivation.msg}</span></div>
+      <div className="motivation"><span className="emoji" aria-hidden>{motivation!.emoji}</span><span>{motivation!.msg}</span></div>
 
       <div className="xp-bar">
         <strong>Level {level.level}</strong>

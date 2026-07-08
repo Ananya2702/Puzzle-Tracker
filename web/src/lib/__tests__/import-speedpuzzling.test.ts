@@ -71,4 +71,10 @@ describe('importSpeedpuzzling', () => {
     const [s] = await listSolvesChrono(db, uid);
     expect(s.date).toBe(TODAY);
   });
+
+  it('treats a non-array records field as empty instead of throwing', async () => {
+    const { db, uid } = await seed();
+    const res = await importSpeedpuzzling(db, uid, { records: { nope: true } }, TODAY);
+    expect(res).toEqual({ imported: 0, duplicates: 0, skipped_type: 0, invalid: 0, total: 0 });
+  });
 });

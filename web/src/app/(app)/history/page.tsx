@@ -25,17 +25,20 @@ export default function HistoryPage() {
   const [editing, setEditing] = useState<Solve | null>(null);
   const [showImport, setShowImport] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [allPieces, setAllPieces] = useState<number[]>([]);
 
   const refresh = useCallback(async () => {
     const qs = new URLSearchParams({ sort, order });
     if (pieces !== 'all') qs.set('pieces', pieces);
-    setRows(await getJSON<Solve[]>(`/api/solves?${qs}`));
+    const fetched = await getJSON<Solve[]>(`/api/solves?${qs}`);
+    setRows(fetched);
+    setAllPieces((prev) => [...new Set([...prev, ...fetched.map((r) => r.pieces)])].sort((a, b) => a - b));
     setLoaded(true);
   }, [pieces, sort, order]);
 
   useEffect(() => { void refresh(); }, [refresh]);
 
-  const pieceOptions = [...new Set(rows.map((r) => r.pieces))].sort((a, b) => a - b);
+  const pieceOptions = allPieces;
 
   async function saveEdit(values: SolveFormValues) {
     if (!editing) return;

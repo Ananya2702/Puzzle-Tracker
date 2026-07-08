@@ -19,6 +19,13 @@ export async function getScalingExponent(db: Db, userId: number): Promise<number
 
 /** Upsert settings; changing scaling_exponent rescales all of the user's solves (legacy behavior). */
 export async function putSettings(db: Db, userId: number, entries: Record<string, string>): Promise<void> {
+  if ('scaling_exponent' in entries) {
+    const raw = String(entries.scaling_exponent).trim();
+    const parsed = raw === '' ? NaN : Number(raw);
+    if (!Number.isFinite(parsed) || parsed < 0 || parsed > 2) {
+      throw new Error('INVALID_SCALING_EXPONENT');
+    }
+  }
   for (const [key, value] of Object.entries(entries)) {
     await db
       .insert(settings)

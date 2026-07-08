@@ -36,4 +36,26 @@ describe('settings service', () => {
     const [row] = await db.select().from(solves).where(eq(solves.userId, uid));
     expect(row.scaledTimeSeconds).toBe(3600); // exponent 0 → identity
   });
+
+  it('rejects an out-of-range scaling_exponent without partial writes', async () => {
+    const { db, uid } = await seed();
+    await db.insert(solves).values({
+      userId: uid, date: '2026-07-01', pieces: 1000, timeSeconds: 3600, scaledTimeSeconds: 2728.29,
+    });
+    await expect(putSettings(db, uid, { scaling_exponent: '1e21', quick_add: '1' })).rejects.toThrow();
+    expect(await getSettings(db, uid)).toEqual({});
+    const [row] = await db.select().from(solves).where(eq(solves.userId, uid));
+    expect(row.scaledTimeSeconds).toBe(2728.29);
+  });
+
+  it('rejects an empty scaling_exponent without partial writes', async () => {
+    const { db, uid } = await seed();
+    await db.insert(solves).values({
+      userId: uid, date: '2026-07-01', pieces: 1000, timeSeconds: 3600, scaledTimeSeconds: 2728.29,
+    });
+    await expect(putSettings(db, uid, { scaling_exponent: '', quick_add: '1' })).rejects.toThrow();
+    expect(await getSettings(db, uid)).toEqual({});
+    const [row] = await db.select().from(solves).where(eq(solves.userId, uid));
+    expect(row.scaledTimeSeconds).toBe(2728.29);
+  });
 });

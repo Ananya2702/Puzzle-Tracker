@@ -30,8 +30,8 @@ export async function importSpeedpuzzling(db: Db, userId: number, payload: unkno
     records = payload as Rec[];
     includeTypes = new Set(['solo']);
   } else if (payload && typeof payload === 'object') {
-    const p = payload as { records?: Rec[]; include_types?: string[] };
-    records = p.records ?? [];
+    const p = payload as { records?: unknown; include_types?: string[] };
+    records = Array.isArray(p.records) ? p.records : [];
     includeTypes = new Set(p.include_types?.length ? p.include_types : ['solo']);
   } else {
     records = [];

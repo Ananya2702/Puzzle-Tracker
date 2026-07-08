@@ -64,6 +64,14 @@ describe('/api/solves', () => {
     expect(sorted[0].timeSeconds).toBe(3000);
   });
 
+  it('GET ignores a malformed pieces filter instead of erroring', async () => {
+    await post({ pieces: 500, time_seconds: 3000, date: '2026-07-01' });
+    await post({ pieces: 1000, time_seconds: 7000, date: '2026-07-02' });
+    const res = await get('?pieces=abc');
+    expect(res.status).toBe(200);
+    expect(await res.json()).toHaveLength(2);
+  });
+
   it('PUT updates own solve; 404 on foreign/missing', async () => {
     const created = (await (await post({ pieces: 500, time_seconds: 3000 })).json()).solve;
     const ok = await put(String(created.id), { time_seconds: 2500 });

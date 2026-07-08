@@ -6,7 +6,8 @@ import { addSolve } from '@/lib/solves';
 const state: {
   db: Awaited<ReturnType<typeof makeTestDb>> | null;
   session: { user: { id: string } } | null;
-} = { db: null, session: null };
+  userId: number | null;
+} = { db: null, session: null, userId: null };
 
 vi.mock('@/db', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/db')>()),
@@ -29,6 +30,7 @@ describe('charts/goals/achievements/export/import routes', () => {
     state.db = await makeTestDb();
     const u = await createUser(state.db, { username: 'maya', email: 'm@x.com', password: 'longenough' });
     state.session = { user: { id: String(u.id) } };
+    state.userId = u.id;
     await addSolve(state.db, u.id, { pieces: 500, time_seconds: 3000, date: '2026-07-01', puzzle_name: 'A, "quoted"' }, '2026-07-07');
     await addSolve(state.db, u.id, { pieces: 500, time_seconds: 2500, date: '2026-07-02' }, '2026-07-07');
   });
@@ -71,6 +73,15 @@ describe('charts/goals/achievements/export/import routes', () => {
     const text = await res.text();
     expect(text.split('\n')[0]).toContain('Scaled Time (500pc)');
     expect(text).toContain('"A, ""quoted"""');
+  });
+
+  it('CSV export neutralizes formula-injection prefixes', async () => {
+    await addSolve(state.db!, state.userId!, {
+      pieces: 500, time_seconds: 2600, date: '2026-07-03', puzzle_name: '=SUM(A1)',
+    }, '2026-07-07');
+    const res = await getCsv(new Request('http://t/api/export/csv'));
+    const text = await res.text();
+    expect(text).toContain("'=SUM(A1)");
   });
 
   it('import route delegates and reports counts', async () => {

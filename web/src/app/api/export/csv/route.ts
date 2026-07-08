@@ -3,7 +3,10 @@ import { getDb } from '@/db';
 import { requireUserId } from '@/lib/api-auth';
 import { listSolvesChrono, csvRows } from '@/lib/solves';
 
-const cell = (v: string) => (/[",\n]/.test(v) ? `"${v.replaceAll('"', '""')}"` : v);
+const cell = (raw: string) => {
+  const v = /^[=+\-@]/.test(raw) ? `'${raw}` : raw;
+  return /[",\n]/.test(v) ? `"${v.replaceAll('"', '""')}"` : v;
+};
 
 export async function GET(_req: Request) {
   const userId = await requireUserId();

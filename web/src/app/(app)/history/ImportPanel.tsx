@@ -4,10 +4,9 @@ import { useRef, useState } from 'react';
 import { postJSON, ApiError } from '@/lib/api-client';
 import { parseCsvSolves, type CsvEntry } from '@/lib/parse-csv';
 import { useToast } from '@/components/Toast';
+import { todayLocal } from '@/lib/time';
 
 interface ImportCounts { imported: number; duplicates: number; skipped_type: number; invalid: number; total: number }
-
-const todayLocal = () => new Date().toISOString().slice(0, 10);
 
 export function ImportPanel({ onDone }: { onDone: () => void }) {
   const { toast } = useToast();

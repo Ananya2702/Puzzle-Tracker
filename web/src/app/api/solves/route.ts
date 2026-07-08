@@ -13,8 +13,10 @@ export async function GET(req: Request) {
   const sortRaw = url.searchParams.get('sort');
   const orderRaw = url.searchParams.get('order');
   const sort = (['date', 'time', 'scaled', 'pieces'] as const).find((s) => s === sortRaw);
+  const piecesNum = piecesRaw ? Number(piecesRaw) : undefined;
+  const pieces = typeof piecesNum === 'number' && Number.isFinite(piecesNum) ? piecesNum : undefined;
   const rows = await listSolves(getDb(), userId, {
-    pieces: piecesRaw ? Number(piecesRaw) : undefined,
+    pieces,
     sort,
     order: orderRaw === 'asc' ? 'asc' : 'desc',
   });
