@@ -5,18 +5,6 @@ import { parseDuration } from '@/lib/time';
 
 const PIECE_PRESETS = [100, 300, 500, 750, 1000, 1500, 2000];
 
-// Accessible name for each preset button. Plain digit labels like "1500"
-// contain "500" as a substring, which makes them ambiguous to accessible-name
-// queries that match "500" (Playwright's getByRole name matching is substring
-// by default). Presets ≥1000 get a "k" label as their aria-label so their
-// accessible name no longer collides with smaller presets, while the visible
-// button text keeps showing the full number.
-function pieceAriaLabel(pc: number): string {
-  if (pc < 1000) return String(pc);
-  const k = pc / 1000;
-  return `${Number.isInteger(k) ? k : k.toFixed(1)}k`;
-}
-
 export function QuickAdd({ onLog, busy }: {
   onLog: (values: { pieces: number; time_seconds: number }) => Promise<boolean | void> | boolean | void;
   busy?: boolean;
@@ -40,7 +28,6 @@ export function QuickAdd({ onLog, busy }: {
         {PIECE_PRESETS.map((pc) => (
           <button
             key={pc} type="button" role="radio" aria-checked={pieces === pc}
-            aria-label={pieceAriaLabel(pc)}
             className="btn" onClick={() => setPieces(pc)}
             style={pieces === pc ? { borderColor: 'var(--accent)', color: 'var(--accent)' } : undefined}
           >

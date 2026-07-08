@@ -13,7 +13,8 @@ test('log → dashboard → history edit → goals → awards → analytics → 
 
   // Quick-add a solve
   await page.getByRole('link', { name: /Log/ }).first().click();
-  await page.getByRole('radio', { name: '500' }).click();
+  // Use exact: true to avoid matching "1500" when searching for "500"
+  await page.getByRole('radio', { name: '500', exact: true }).click();
   await page.getByLabel('Time').fill('45:00');
   await page.getByRole('button', { name: 'Log 500pc' }).click();
   await expect(page.getByText(/Logged 500pc in 45:00/)).toBeVisible();
