@@ -28,6 +28,12 @@ and stays deployed until cutover (see Plan 3).
    — do this BEFORE the first deploy that uses a new migration.
 5. Deploys are automatic per push; each branch gets a preview URL.
 
+### Going live with existing data
+
+The legacy Flask database and this app cannot share one database (table
+name collisions). Follow [MIGRATION.md](./MIGRATION.md) to create the new
+database, rehearse and run the data migration, and retire Render.
+
 ## Structure
 
 See `docs/superpowers/plans/2026-07-07-revamp-1-foundation.md` for the map.
