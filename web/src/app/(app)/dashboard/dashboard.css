@@ -1,0 +1,17 @@
+.dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.dash-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+@media (max-width: 900px) { .dash-cols { grid-template-columns: 1fr; } }
+.motivation {
+  display: flex; gap: 12px; align-items: center; padding: 14px 18px; margin-bottom: 16px;
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg-raised));
+  border: 1px solid var(--border); border-radius: var(--radius);
+}
+.motivation .emoji { font-size: 1.6rem; }
+.xp-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; font-size: 0.85rem; }
+.xp-track { flex: 1; height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--border) 60%, transparent); overflow: hidden; }
+.xp-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.4s ease; }
+.recent-list { display: flex; flex-direction: column; }
+.recent-list .row { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+.recent-list .row:last-child { border-bottom: none; }
+.fun-list .row { display: flex; gap: 10px; padding: 6px 0; font-size: 0.9rem; align-items: baseline; }
+.fun-list .row .t { color: var(--text-muted); flex: 1; }

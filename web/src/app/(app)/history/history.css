@@ -12,11 +12,6 @@
 .history-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
 .history-table tr:last-child td { border-bottom: none; }
 .table-scroll { overflow-x: auto; }
-.chip {
-  display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.7rem; font-weight: 700;
-  background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent);
-}
-.chip-muted { background: color-mix(in srgb, var(--border) 60%, transparent); color: var(--text-muted); }
 .modal-overlay {
   position: fixed; inset: 0; z-index: 60; background: rgba(0, 0, 0, 0.5);
   display: grid; place-items: center; padding: 20px;

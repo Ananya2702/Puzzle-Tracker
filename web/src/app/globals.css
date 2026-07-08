@@ -51,6 +51,11 @@ a:hover { text-decoration: underline; }
 h1, h2, h3 { font-family: var(--font-display); line-height: 1.2; }
 button { font: inherit; }
 .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.chip {
+  display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.7rem; font-weight: 700;
+  background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent);
+}
+.chip-muted { background: color-mix(in srgb, var(--border) 60%, transparent); color: var(--text-muted); }
 
 /* ---------- Chart tokens (validated: dataviz six-checks, per theme surface) ---------- */
 :root,
