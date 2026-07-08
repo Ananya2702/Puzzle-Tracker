@@ -14,17 +14,20 @@ if (legacyUrl === targetUrl) {
   process.exit(1);
 }
 
-const legacy = new Pool({ connectionString: legacyUrl, max: 1 });
-const target = new Pool({ connectionString: targetUrl, max: 1 });
-
-try {
-  const report = await migrateLegacy(legacy, target, { dryRun });
-  console.log(`${dryRun ? '[DRY RUN — rolled back] ' : ''}Migrated:`, report);
-  if (report.warnings.length) console.warn('Warnings:\n- ' + report.warnings.join('\n- '));
-} catch (e) {
-  console.error('Migration failed (no changes committed):', e instanceof Error ? e.message : e);
-  process.exit(1);
-} finally {
-  await legacy.end();
-  await target.end();
+async function main(): Promise<void> {
+  const legacy = new Pool({ connectionString: legacyUrl, max: 1 });
+  const target = new Pool({ connectionString: targetUrl, max: 1 });
+  try {
+    const report = await migrateLegacy(legacy, target, { dryRun });
+    console.log(`${dryRun ? '[DRY RUN — rolled back] ' : ''}Migrated:`, report);
+    if (report.warnings.length) console.warn('Warnings:\n- ' + report.warnings.join('\n- '));
+  } catch (e) {
+    console.error('Migration failed (no changes committed):', e instanceof Error ? e.message : e);
+    process.exitCode = 1;
+  } finally {
+    await legacy.end();
+    await target.end();
+  }
 }
+
+void main();
