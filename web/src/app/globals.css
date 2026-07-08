@@ -57,6 +57,17 @@ button { font: inherit; }
 }
 .chip-muted { background: color-mix(in srgb, var(--border) 60%, transparent); color: var(--text-muted); }
 
+/* ---------- Table styles ---------- */
+.history-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.history-table th {
+  text-align: left; padding: 10px 12px; color: var(--text-muted); font-weight: 600;
+  font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+}
+.history-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.history-table tr:last-child td { border-bottom: none; }
+.table-scroll { overflow-x: auto; }
+
 /* ---------- Chart tokens (validated: dataviz six-checks, per theme surface) ---------- */
 :root,
 [data-theme='midnight'] {
