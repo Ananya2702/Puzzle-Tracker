@@ -1,5 +1,6 @@
 import { SignOutButton } from './SignOutButton';
 import { ThemePicker } from '@/components/ThemePicker';
+import { ScalingCard } from './ScalingCard';
 
 export default function SettingsPage() {
   return (
@@ -12,6 +13,7 @@ export default function SettingsPage() {
         <h3 style={{ marginBottom: 12 }}>Theme</h3>
         <ThemePicker />
       </div>
+      <ScalingCard />
       <div className="card">
         <SignOutButton />
       </div>
