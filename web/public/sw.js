@@ -1,4 +1,5 @@
 /* Puzzle Geeks service worker: app shell offline, network-first pages, API never cached. */
+/* Bump VERSION when anything under public/ changes. */
 const VERSION = 'pg-v1';
 const STATIC_CACHE = `${VERSION}-static`;
 const PAGE_CACHE = `${VERSION}-pages`;
@@ -24,8 +25,10 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then((res) => {
-          const copy = res.clone();
-          caches.open(PAGE_CACHE).then((c) => c.put(request, copy));
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(PAGE_CACHE).then((c) => c.put(request, copy));
+          }
           return res;
         })
         .catch(() => caches.match(request, { cacheName: PAGE_CACHE })),
@@ -39,8 +42,10 @@ self.addEventListener('fetch', (event) => {
         (hit) =>
           hit ??
           fetch(request).then((res) => {
-            const copy = res.clone();
-            caches.open(STATIC_CACHE).then((c) => c.put(request, copy));
+            if (res.ok) {
+              const copy = res.clone();
+              caches.open(STATIC_CACHE).then((c) => c.put(request, copy));
+            }
             return res;
           }),
       ),

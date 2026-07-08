@@ -67,6 +67,43 @@ describe('splits', () => {
     s = split(s, T0 + 60_000);
     expect(payloadSplits(s, 60)).toEqual([{ phase: 'edge', seconds: 60, position: 0 }]);
   });
+
+  it('a second split at the same second as the previous split is ignored', () => {
+    let s = start(idleState(), T0);
+    s = split(s, T0 + 60_000);      // edge at 60
+    const beforeDup = s;
+    s = split(s, T0 + 60_000);      // duplicate split at 60 — no-op
+    expect(s).toBe(beforeDup);
+    expect(s.splits).toEqual([{ phase: 'edge', atSeconds: 60 }]);
+  });
+
+  it('payloadSplits skips zero-duration entries from equal cumulative marks and renumbers positions', () => {
+    // Hand-built state: two marks land on the same second (e.g. restored from a race).
+    const s = {
+      ...start(idleState(), T0),
+      splits: [
+        { phase: 'edge', atSeconds: 60 },
+        { phase: 'sort', atSeconds: 60 },   // zero-duration vs previous mark
+        { phase: 'assembly', atSeconds: 150 },
+      ],
+    };
+    const out = payloadSplits(s, 400);
+    expect(out.every((p) => p.seconds > 0)).toBe(true);
+    expect(out.map((p) => p.position)).toEqual(out.map((_, i) => i));
+    expect(out).toEqual([
+      { phase: 'edge', seconds: 60, position: 0 },
+      { phase: 'assembly', seconds: 90, position: 1 },
+      { phase: 'phase 4', seconds: 250, position: 2 }, // tail: 400-150
+    ]);
+  });
+
+  it('Split then Finish at the same second drops the zero-length tail; all emitted seconds positive', () => {
+    let s = start(idleState(), T0);
+    s = split(s, T0 + 60_000); // edge at 60
+    const out = payloadSplits(s, 60); // finish at the same second as the last split
+    expect(out).toEqual([{ phase: 'edge', seconds: 60, position: 0 }]);
+    expect(out.every((p) => p.seconds > 0)).toBe(true);
+  });
 });
 
 describe('pbComparison', () => {

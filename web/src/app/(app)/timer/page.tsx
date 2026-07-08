@@ -20,7 +20,7 @@ interface PbPayload {
 interface LogResponse { newAchievements: string[]; isPersonalBest: boolean }
 
 const STORAGE_KEY = 'pg-timer';
-const signed = (d: number) => `${d <= 0 ? '−' : '+'}${formatDuration(Math.abs(d))}`;
+const signed = (d: number) => `${d < 0 ? '−' : '+'}${formatDuration(Math.abs(d))}`;
 
 export default function TimerPage() {
   const { toast } = useToast();
@@ -41,6 +41,11 @@ export default function TimerPage() {
       setState(saved);
       if (saved.pieces) setPieces(saved.pieces);
       toast('Resumed your solve in progress');
+    } else if (saved && saved.status === 'finished') {
+      setState(saved);
+      setFinished(saved);
+      if (saved.pieces) setPieces(saved.pieces);
+      toast('Resumed your finished solve — save it!');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

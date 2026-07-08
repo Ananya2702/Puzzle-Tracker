@@ -21,24 +21,28 @@ database stays untouched until you delete it.
 
 Neon console → your project → Databases → New database → name `puzzlegeeks`.
 Copy its **pooled** connection string (this is the new app's DATABASE_URL).
+For `drizzle-kit migrate` and the migration script below, prefer the
+**unpooled** (direct) Neon connection string — the app itself should keep
+using the pooled one.
 
 ## 2. Create the schema
 
 From `web/` on your machine:
 
-    DATABASE_URL='<new puzzlegeeks url>' npx drizzle-kit migrate
+    DATABASE_URL='<new puzzlegeeks unpooled url>' npx drizzle-kit migrate
 
 ## 3. Rehearse the migration (no writes committed)
 
-    LEGACY_DATABASE_URL='<legacy url>' DATABASE_URL='<new url>' npm run migrate:legacy -- --dry-run
+    LEGACY_DATABASE_URL='<legacy url>' DATABASE_URL='<new url>' npm run migrate:legacy
 
-Read the report: user/solve/goal/achievement counts should match what you
-expect from the live site. Collisions or verification failures abort with
-an explanation and nothing written.
+This is the default — nothing is committed. Read the report: user/solve/goal/
+achievement counts should match what you expect from the live site.
+Collisions or verification failures abort with an explanation and nothing
+written.
 
 ## 4. Run it for real
 
-    LEGACY_DATABASE_URL='<legacy url>' DATABASE_URL='<new url>' npm run migrate:legacy
+    LEGACY_DATABASE_URL='<legacy url>' DATABASE_URL='<new url>' npm run migrate:legacy -- --execute
 
 ## 5. Point Vercel at the new database and verify
 

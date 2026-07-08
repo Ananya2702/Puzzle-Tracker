@@ -72,6 +72,16 @@ describe('migrateLegacy', () => {
     expect(next.id).toBeGreaterThan(7);
   });
 
+  it('normalizes an empty-string source_id to null (avoids uq_solves_user_source collisions on \'\')', async () => {
+    await legacy.query(`INSERT INTO users (id, username, email, password_hash) VALUES (1, 'maya', 'm@x.com', 'h')`);
+    await legacy.query(`INSERT INTO puzzles (user_id, date, pieces, time_seconds, scaled_time_seconds, source_id) VALUES
+      (1, '2026-06-01', 500, 3000, 3000, ''), (1, '2026-06-02', 500, 3000, 3000, '')`);
+    const report = await migrateLegacy(legacy, target);
+    expect(report.solves).toBe(2);
+    const solves = (await target.query(`SELECT source_id FROM solves ORDER BY date`)).rows as Record<string, unknown>[];
+    expect(solves.map((s) => s.source_id)).toEqual([null, null]);
+  });
+
   it('aborts on lowercased-email collision with no writes', async () => {
     await legacy.query(`INSERT INTO users (id, username, email, password_hash) VALUES
       (1, 'a', 'Foo@X.com', 'h'), (2, 'b', 'foo@x.com', 'h')`);

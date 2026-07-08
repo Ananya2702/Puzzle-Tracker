@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 const uniq = `e2e3_${Date.now()}`;
 
-test('timer: start → splits → finish → saved with splits visible in history', async ({ page }) => {
+test('timer: start → splits → finish → saved and visible in history', async ({ page }) => {
   await page.goto('/register');
   await page.getByLabel('Username').fill(uniq);
   await page.getByLabel('Email').fill(`${uniq}@example.com`);

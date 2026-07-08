@@ -72,7 +72,7 @@ export async function migrateLegacy(
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)`,
         [p.user_id, s(p.date), p.pieces, p.time_seconds, p.scaled_time_seconds, s(p.puzzle_name), s(p.brand),
           p.difficulty_rating ?? 3, s(p.notes), s(p.tags), b(p.is_personal_best), s(p.puzzle_type) || 'solo',
-          b(p.first_attempt), s(p.source), p.source_id ?? null,
+          b(p.first_attempt), s(p.source), p.source_id === '' ? null : (p.source_id ?? null),
           p.community_avg_time ?? null, p.community_best_time ?? null, p.player_rank ?? null, p.community_solvers ?? null,
           p.created_at ?? new Date(), p.updated_at ?? new Date()],
       );

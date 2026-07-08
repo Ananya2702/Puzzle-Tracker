@@ -48,22 +48,27 @@ export const elapsedSeconds = (s: TimerState, now: number): number => Math.floor
 
 export function split(s: TimerState, now: number): TimerState {
   if (s.status !== 'running') return s;
+  const atSeconds = elapsedSeconds(s, now);
+  const last = s.splits[s.splits.length - 1];
+  if (last && last.atSeconds === atSeconds) return s; // zero-second split — ignore
   const phase = s.phases[s.splits.length] ?? `phase ${s.splits.length + 1}`;
-  return { ...s, splits: [...s.splits, { phase, atSeconds: elapsedSeconds(s, now) }] };
+  return { ...s, splits: [...s.splits, { phase, atSeconds }] };
 }
 
 /** Per-phase durations (schema shape) from cumulative marks; includes the tail phase, drops it when empty. */
 export function payloadSplits(s: TimerState, finalSeconds: number): Array<{ phase: string; seconds: number; position: number }> {
   const out: Array<{ phase: string; seconds: number; position: number }> = [];
   let prev = 0;
-  for (const [i, sp] of s.splits.entries()) {
-    out.push({ phase: sp.phase, seconds: sp.atSeconds - prev, position: i });
+  for (const sp of s.splits) {
+    const seconds = sp.atSeconds - prev;
+    if (seconds <= 0) continue; // zero-duration mark (e.g. duplicate cumulative value) — skip, leave prev at the last emitted mark
+    out.push({ phase: sp.phase, seconds, position: out.length });
     prev = sp.atSeconds;
   }
   const tail = finalSeconds - prev;
   if (tail > 0) {
     const phase = s.phases[s.splits.length] ?? `phase ${s.splits.length + 1}`;
-    out.push({ phase, seconds: tail, position: s.splits.length });
+    out.push({ phase, seconds: tail, position: out.length });
   }
   return out;
 }

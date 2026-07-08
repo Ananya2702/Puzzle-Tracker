@@ -9,8 +9,9 @@ export function OfflineSync() {
   useEffect(() => {
     async function sync() {
       if (queuedSolveCount() === 0) return;
-      const { sent } = await flushSolveQueue();
+      const { sent, dropped } = await flushSolveQueue();
       if (sent > 0) toast(`Synced ${sent} offline solve${sent > 1 ? 's' : ''}`);
+      if (dropped > 0) toast(`${dropped} offline solve(s) couldn't be saved and were discarded`, 'error');
     }
     void sync();
     window.addEventListener('online', sync);
