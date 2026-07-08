@@ -3,6 +3,7 @@ import { auth } from '@/auth';
 import { Sidebar } from '@/components/Sidebar';
 import { ToastProvider } from '@/components/Toast';
 import { ConfettiCanvas } from '@/components/Confetti';
+import { OfflineSync } from '@/components/OfflineSync';
 import '@/components/forms.css';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -15,6 +16,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <main className="shell-main">{children}</main>
       </div>
       <ConfettiCanvas />
+      <OfflineSync />
     </ToastProvider>
   );
 }
